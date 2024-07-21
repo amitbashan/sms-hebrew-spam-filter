@@ -34,13 +34,10 @@ fun BroadcastReceiver.goAsync(
 }
 
 class SmsReceiver: BroadcastReceiver() {
+
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION) == true) return
         val broadcasts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-        val db = AppDatabase.getInstance()
-        val contactDao = db.contactDao()
-        val messageDao = db.messageDao()
-        val previewDao = db.contactPreviewDao()
         val groupedBroadcasts = broadcasts.groupBy { broadcast -> broadcast.displayOriginatingAddress }
         val sortedGroupedBroadcasts = groupedBroadcasts.mapValues { it.value.sortedBy { v -> v.timestampMillis } }
         val pairs = sortedGroupedBroadcasts.map { kv ->
@@ -51,6 +48,11 @@ class SmsReceiver: BroadcastReceiver() {
             val preview = ContactPreview(sender, timestamp, body)
             Pair(message, preview)
         }
+
+        val db = AppDatabase.getInstance()
+        val contactDao = db.contactDao()
+        val messageDao = db.messageDao()
+        val previewDao = db.contactPreviewDao()
 
         goAsync {
             pairs.forEach {

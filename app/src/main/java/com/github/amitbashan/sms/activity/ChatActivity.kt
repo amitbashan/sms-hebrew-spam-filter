@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.ArrowBack
@@ -46,16 +47,14 @@ class ChatActivity : ComponentActivity() {
                 .padding(innerPadding),
             horizontalAlignment = Alignment.Start
         ) {
-            conversation.forEach { message ->
-                item {
-                    Row(
-                        Modifier
-                            .fillMaxSize()
-                            .padding(3.dp),
-                        horizontalArrangement = Arrangement.Start
-                    ) {
-                        Message(message.content)
-                    }
+            items(conversation) { message ->
+                Row(
+                    Modifier
+                        .fillMaxSize()
+                        .padding(3.dp),
+                    horizontalArrangement = Arrangement.Start
+                ) {
+                    Message(message.content)
                 }
             }
         }
