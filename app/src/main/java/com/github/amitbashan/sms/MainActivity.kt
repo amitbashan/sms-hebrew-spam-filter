@@ -9,16 +9,21 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.github.amitbashan.sms.activity.ChatActivity
@@ -35,23 +40,33 @@ class MainActivity : ComponentActivity() {
         val previews by viewModel.db.contactPreviewDao().getAll()
             .collectAsState(initial = emptyList())
         val sortedPreviews = previews.sortedByDescending { preview -> preview.timestamp }
-        Column(
-            modifier = Modifier
-                .padding(innerPadding),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            sortedPreviews.forEach { preview ->
-                ContactButton(
-                    preview.originatingAddress,
-                    preview.content,
-                    preview.timestamp,
-                    onclickHandler =
-                    {
-                        val intent = Intent(applicationContext, ChatActivity::class.java)
-                        intent.putExtra("contact", preview.originatingAddress)
-                        startActivity(intent)
-                    }
-                )
+        if (sortedPreviews.isEmpty()) {
+            Column(
+                Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.Center,
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text("No SMS messages have been received yet...", fontSize = 25.sp, textAlign = TextAlign.Center)
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .padding(innerPadding),
+                verticalArrangement = Arrangement.spacedBy(2.dp),
+            ) {
+                sortedPreviews.forEach { preview ->
+                    ContactButton(
+                        preview.originatingAddress,
+                        preview.content,
+                        preview.timestamp,
+                        onclickHandler =
+                        {
+                            val intent = Intent(applicationContext, ChatActivity::class.java)
+                            intent.putExtra("contact", preview.originatingAddress)
+                            startActivity(intent)
+                        }
+                    )
+                }
             }
         }
     }
@@ -77,7 +92,7 @@ class MainActivity : ComponentActivity() {
             Scaffold(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(5.dp)
+                    .padding(5.dp),
             ) { innerPadding ->
                 ContactList(innerPadding)
             }

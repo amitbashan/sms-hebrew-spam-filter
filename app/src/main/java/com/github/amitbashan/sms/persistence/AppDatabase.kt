@@ -25,7 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
             instance = Room.databaseBuilder(
                 context.applicationContext,
                 AppDatabase::class.java,
-                "sms_db_pr3"
+                "sms_db_pr4"
             ).build()
         }
 
