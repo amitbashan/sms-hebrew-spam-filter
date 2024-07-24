@@ -57,11 +57,11 @@ import com.github.amitbashan.sms.viewmodel.CommonViewModel
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
-    private val smsReceiver = SmsReceiver()
 
     @Composable
     fun ContactList(innerPadding: PaddingValues) {
-        val previews by viewModel.db.contactPreviewDao().getAll()
+        val db = viewModel.db ?: return
+        val previews by db.contactPreviewDao().getAll()
             .collectAsState(initial = emptyList())
         val sortedPreviews = previews.sortedByDescending { preview -> preview.timestamp }
         if (sortedPreviews.isEmpty()) {
@@ -99,10 +99,15 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStart() {
+        super.onStart()
+        AppDatabase.initialize(applicationContext)
+        startService(Intent(applicationContext, SmsService::class.java))
+    }
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        AppDatabase.initialize(applicationContext)
 
         if (ContextCompat.checkSelfPermission(
                 applicationContext,
@@ -118,7 +123,7 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            var showAppInfoDialog = remember { mutableStateOf(false) }
+            val showAppInfoDialog = remember { mutableStateOf(false) }
 
             Scaffold(
                 modifier = Modifier
@@ -181,15 +186,5 @@ class MainActivity : ComponentActivity() {
                 ContactList(innerPadding)
             }
         }
-    }
-
-    override fun onStart() {
-        super.onStart()
-        registerReceiver(smsReceiver, IntentFilter("android.provider.Telephony.SMS_RECEIVED"))
-    }
-
-    override fun onStop() {
-        super.onStop()
-        unregisterReceiver(smsReceiver)
     }
 }

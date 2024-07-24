@@ -5,6 +5,7 @@ import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
+import com.github.amitbashan.sms.SmsService
 
 @Database(
     entities = [Contact::class, ContactPreview::class, Message::class],
@@ -19,18 +20,20 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun messageDao(): MessageDao
 
     companion object {
-        private lateinit var instance: AppDatabase
+        private var dbInstance: AppDatabase? = null
 
         fun initialize(context: Context) {
-            instance = Room.databaseBuilder(
-                context.applicationContext,
-                AppDatabase::class.java,
-                "sms_db_pr4"
-            ).build()
+            if (dbInstance == null) {
+                dbInstance = Room.databaseBuilder(
+                    context,
+                    AppDatabase::class.java,
+                    "sms_db_test1"
+                ).build()
+            }
         }
 
-        fun getInstance(): AppDatabase {
-            return instance
+        fun getInstance(): AppDatabase? {
+            return dbInstance
         }
     }
 }

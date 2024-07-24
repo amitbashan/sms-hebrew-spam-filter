@@ -39,7 +39,8 @@ class ChatActivity : ComponentActivity() {
 
     @Composable
     fun MessageList(innerPadding: PaddingValues, originatingAddress: String) {
-        val conversation by viewModel.db.messageDao().getConversationOf(originatingAddress)
+        val db = viewModel.db ?: return
+        val conversation by db.messageDao().getConversationOf(originatingAddress)
             .collectAsState(initial = emptyList())
         return LazyColumn(
             Modifier

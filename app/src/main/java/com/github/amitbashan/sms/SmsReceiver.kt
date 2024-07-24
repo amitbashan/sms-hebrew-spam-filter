@@ -23,7 +23,7 @@ fun BroadcastReceiver.goAsync(
     block: suspend CoroutineScope.() -> Unit
 ) {
     val pendingResult = goAsync()
-    @OptIn(DelicateCoroutinesApi::class) // Must run globally; there's no teardown callback.
+    @OptIn(DelicateCoroutinesApi::class)
     GlobalScope.launch(context) {
         try {
             block()
@@ -34,7 +34,6 @@ fun BroadcastReceiver.goAsync(
 }
 
 class SmsReceiver: BroadcastReceiver() {
-
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION) == true) return
         val broadcasts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
@@ -48,8 +47,7 @@ class SmsReceiver: BroadcastReceiver() {
             val preview = ContactPreview(sender, timestamp, body)
             Pair(message, preview)
         }
-
-        val db = AppDatabase.getInstance()
+        val db = AppDatabase.getInstance() ?: return
         val contactDao = db.contactDao()
         val messageDao = db.messageDao()
         val previewDao = db.contactPreviewDao()
