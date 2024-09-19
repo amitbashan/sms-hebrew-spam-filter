@@ -33,16 +33,20 @@ fun BroadcastReceiver.goAsync(
     }
 }
 
-class SmsReceiver: BroadcastReceiver() {
+class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent?.equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION) == true) return
         val broadcasts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
-        val groupedBroadcasts = broadcasts.groupBy { broadcast -> broadcast.displayOriginatingAddress }
-        val sortedGroupedBroadcasts = groupedBroadcasts.mapValues { it.value.sortedBy { v -> v.timestampMillis } }
+        val groupedBroadcasts = broadcasts.groupBy { it.displayOriginatingAddress }
+        val sortedGroupedBroadcasts =
+            groupedBroadcasts.mapValues { it.value.sortedBy { v -> v.timestampMillis } }
         val pairs = sortedGroupedBroadcasts.map { kv ->
             val sender = kv.key
             val body: String = kv.value.fold("") { acc, x -> acc + x.messageBody }
-            val timestamp = LocalDateTime.ofInstant(Instant.ofEpochMilli(kv.value.first().timestampMillis), ZoneId.systemDefault())
+            val timestamp = LocalDateTime.ofInstant(
+                Instant.ofEpochMilli(kv.value.first().timestampMillis),
+                ZoneId.systemDefault()
+            )
             val message = Message(sender, timestamp, body)
             val preview = ContactPreview(sender, timestamp, body)
             Pair(message, preview)
@@ -54,11 +58,10 @@ class SmsReceiver: BroadcastReceiver() {
 
         goAsync {
             pairs.forEach {
-                pair ->
-                    val originatingAddress = pair.first.originatingAddress
-                    contactDao.upsert(Contact(originatingAddress, false))
-                    messageDao.pushMessage(pair.first)
-                    previewDao.upsert(pair.second)
+                val originatingAddress = it.first.originatingAddress
+                contactDao.upsert(Contact(originatingAddress, false))
+                messageDao.pushMessage(it.first)
+                previewDao.upsert(it.second)
             }
         }
     }
