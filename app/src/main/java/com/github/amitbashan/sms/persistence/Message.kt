@@ -20,4 +20,5 @@ data class Message(
     val timestamp: LocalDateTime,
     @ColumnInfo
     val content: String,
+    val isMe: Boolean,
 )

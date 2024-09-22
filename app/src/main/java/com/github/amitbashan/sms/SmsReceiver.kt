@@ -1,9 +1,11 @@
 package com.github.amitbashan.sms
 
+import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import android.widget.Toast
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.Contact
 import com.github.amitbashan.sms.persistence.ContactPreview
@@ -35,11 +37,16 @@ fun BroadcastReceiver.goAsync(
 
 class SmsReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
+        println("result code: ${resultCode}")
+        if (resultCode == Activity.RESULT_OK) {
+            Toast.makeText(context, "hello", Toast.LENGTH_SHORT).show()
+        }
+
         if (intent?.equals(Telephony.Sms.Intents.SMS_RECEIVED_ACTION) == true) return
         val broadcasts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         val groupedBroadcasts = broadcasts.groupBy { it.displayOriginatingAddress }
         val sortedGroupedBroadcasts =
-            groupedBroadcasts.mapValues { it.value.sortedBy { v -> v.timestampMillis } }
+            groupedBroadcasts.mapValues { it.value.sortedBy { it.timestampMillis } }
         val pairs = sortedGroupedBroadcasts.map { kv ->
             val sender = kv.key
             val body: String = kv.value.fold("") { acc, x -> acc + x.messageBody }
@@ -47,7 +54,7 @@ class SmsReceiver : BroadcastReceiver() {
                 Instant.ofEpochMilli(kv.value.first().timestampMillis),
                 ZoneId.systemDefault()
             )
-            val message = Message(sender, timestamp, body)
+            val message = Message(sender, timestamp, body, false)
             val preview = ContactPreview(sender, timestamp, body)
             Pair(message, preview)
         }

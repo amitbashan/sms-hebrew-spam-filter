@@ -53,10 +53,37 @@ import com.github.amitbashan.sms.activity.ChatActivity
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.ui.component.BulletList
 import com.github.amitbashan.sms.ui.component.ContactButton
+import com.github.amitbashan.sms.ui.component.ErrorPage
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
+
+    fun hasPermissions(): Boolean {
+        val needsReadSmsPermission = ContextCompat.checkSelfPermission(
+            applicationContext,
+            android.Manifest.permission.RECEIVE_SMS
+        ) == PackageManager.PERMISSION_DENIED
+        val needsSendSmsPermission = ContextCompat.checkSelfPermission(
+            applicationContext,
+            android.Manifest.permission.SEND_SMS
+        ) == PackageManager.PERMISSION_DENIED
+
+        return !(needsReadSmsPermission || needsSendSmsPermission)
+    }
+
+    fun requestPermissions() {
+        if (!hasPermissions()) {
+            ActivityCompat.requestPermissions(
+                this,
+                arrayOf(
+                    android.Manifest.permission.RECEIVE_SMS,
+                    android.Manifest.permission.SEND_SMS
+                ),
+                0
+            )
+        }
+    }
 
     @Composable
     fun ContactList(innerPadding: PaddingValues) {
@@ -65,17 +92,7 @@ class MainActivity : ComponentActivity() {
             .collectAsState(initial = emptyList())
         val sortedPreviews = previews.sortedByDescending { preview -> preview.timestamp }
         if (sortedPreviews.isEmpty()) {
-            Column(
-                Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.Center,
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    "No SMS messages have been received yet...",
-                    fontSize = 25.sp,
-                    textAlign = TextAlign.Center
-                )
-            }
+            ErrorPage("No SMS messages have been received or sent yet...")
         } else {
             Column(
                 modifier = Modifier
@@ -109,16 +126,12 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        if (ContextCompat.checkSelfPermission(
-                applicationContext,
-                android.Manifest.permission.RECEIVE_SMS
-            ) == PackageManager.PERMISSION_DENIED
-        ) {
-            ActivityCompat.requestPermissions(
-                this,
-                arrayOf(android.Manifest.permission.RECEIVE_SMS),
-                0
-            )
+        requestPermissions()
+
+        if (!hasPermissions()) {
+            return setContent {
+                ErrorPage("Permissions to read/send SMS were not granted...")
+            }
         }
 
         enableEdgeToEdge()
@@ -133,7 +146,7 @@ class MainActivity : ComponentActivity() {
                     TopAppBar(
                         title = {
                             Column(modifier = Modifier.fillMaxWidth()) {
-                                Text("SMS Receiver", fontSize = 20.sp)
+                                Text("SMS", fontSize = 20.sp)
                                 Text("with Hebrew spam filter", fontSize = 15.sp)
                             }
                         },
