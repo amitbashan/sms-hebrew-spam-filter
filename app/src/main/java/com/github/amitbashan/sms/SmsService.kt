@@ -16,8 +16,8 @@ class SmsService : Service() {
         AppDatabase.initialize(applicationContext)
         registerReceiver(
             smsReceiver,
-            IntentFilter("SMS_HEBREW_SPAM_FILTER_APP_RECEIVER"),
-            RECEIVER_NOT_EXPORTED
+            IntentFilter(android.provider.Telephony.Sms.Intents.SMS_RECEIVED_ACTION),
+            RECEIVER_EXPORTED
         )
     }
 

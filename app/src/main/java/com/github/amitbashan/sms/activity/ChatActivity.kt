@@ -31,6 +31,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -54,61 +55,56 @@ import com.github.amitbashan.sms.ui.component.MessageTextBox
 import com.github.amitbashan.sms.viewmodel.ChatViewModel
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
 import kotlinx.coroutines.launch
-import java.time.LocalDateTime
 
 class ChatActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
     private val chatViewModel: ChatViewModel by viewModels()
     lateinit var originatingAddress: String
+    private val smsSentAction = "SMS_SENT_ACTION_${this.hashCode()}"
+    private val smsDeliveredAction = "SMS_DELIVERED_ACTION_${this.hashCode()}"
+    private val smsSentBroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val db = viewModel.db ?: return
+            val timestamp = intent?.getLongExtra("timestamp", Long.MAX_VALUE) ?: return
+
+            goAsync {
+                db.messageDao()
+                    .updateMessageStatus(originatingAddress, timestamp, MessageStatus.Sent)
+            }
+        }
+    }
+    private val smsDeliveredBroadcastReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val db = viewModel.db ?: return
+            val timestamp = intent?.getLongExtra("timestamp", Long.MAX_VALUE) ?: return
+
+            goAsync {
+                db.messageDao().updateMessageStatus(
+                    originatingAddress,
+                    timestamp,
+                    MessageStatus.Delivered
+                )
+            }
+        }
+    }
 
     private fun sendMessage(message: String) {
         val db = viewModel.db ?: return
-        val timestamp = LocalDateTime.now()
-        val smsSentAction = "SMS_SENT_ACTION_${timestamp.hashCode()}"
-        val smsDeliveredAction = "SMS_DELIVERED_ACTION_${timestamp.hashCode()}"
+        val timestamp = System.currentTimeMillis()
+        val smsSentIntent = Intent(smsSentAction).putExtra("timestamp", timestamp)
+        val smsDeliveredIntent = Intent(smsDeliveredAction).putExtra("timestamp", timestamp)
         val smsSentPendingIntent =
             PendingIntent.getBroadcast(
-                this, 0, Intent(smsSentAction),
+                applicationContext, 0, smsSentIntent,
                 PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
             )
         val smsDeliveredPendingIntent = PendingIntent.getBroadcast(
-            this,
+            applicationContext,
             0,
-            Intent(smsDeliveredAction),
+            smsDeliveredIntent,
             PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
         )
-        val smsSentBroadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                println("SENT")
-                goAsync {
-                    db.messageDao()
-                        .updateMessageStatus(originatingAddress, timestamp, MessageStatus.Sent)
-                }
-            }
-        }
-        val smsDeliveredBroadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(context: Context?, intent: Intent?) {
-                println("DELIVERED")
-                goAsync {
-                    db.messageDao().updateMessageStatus(
-                        originatingAddress,
-                        timestamp,
-                        MessageStatus.Delivered
-                    )
-                }
-            }
-        }
 
-        registerReceiver(
-            smsSentBroadcastReceiver,
-            IntentFilter(smsSentAction),
-            RECEIVER_NOT_EXPORTED
-        )
-        registerReceiver(
-            smsDeliveredBroadcastReceiver,
-            IntentFilter(smsDeliveredAction),
-            RECEIVER_NOT_EXPORTED
-        )
         try {
             chatViewModel.smsManager.sendTextMessage(
                 originatingAddress,
@@ -127,8 +123,6 @@ class ChatActivity : ComponentActivity() {
             Toast.makeText(applicationContext, "Failed to send SMS message", Toast.LENGTH_LONG)
                 .show()
         }
-        unregisterReceiver(smsDeliveredBroadcastReceiver)
-        unregisterReceiver(smsSentBroadcastReceiver)
     }
 
     @Composable
@@ -216,5 +210,25 @@ class ChatActivity : ComponentActivity() {
                 MessageList(innerPadding, originatingAddress)
             }
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        registerReceiver(
+            smsSentBroadcastReceiver,
+            IntentFilter(smsSentAction),
+            RECEIVER_EXPORTED
+        )
+        registerReceiver(
+            smsDeliveredBroadcastReceiver,
+            IntentFilter(smsDeliveredAction),
+            RECEIVER_EXPORTED
+        )
+    }
+
+    override fun onStop() {
+        super.onStop()
+        unregisterReceiver(smsSentBroadcastReceiver)
+        unregisterReceiver(smsDeliveredBroadcastReceiver)
     }
 }

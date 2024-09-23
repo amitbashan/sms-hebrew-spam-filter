@@ -19,5 +19,5 @@ interface MessageDao {
     suspend fun pushMessage(message: Message)
 
     @Query("UPDATE Message SET messageStatus = :status WHERE Message.originatingAddress = :originatingAddress AND Message.timestamp = :timestamp")
-    fun updateMessageStatus(originatingAddress: String, timestamp: LocalDateTime, status: MessageStatus)
+    fun updateMessageStatus(originatingAddress: String, timestamp: Long, status: MessageStatus)
 }

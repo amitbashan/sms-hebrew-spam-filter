@@ -1,11 +1,9 @@
 package com.github.amitbashan.sms
 
-import android.app.Activity
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
-import android.widget.Toast
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.Contact
 import com.github.amitbashan.sms.persistence.ContactPreview
@@ -46,7 +44,7 @@ class SmsReceiver : BroadcastReceiver() {
         val pairs = sortedGroupedBroadcasts.map { kv ->
             val sender = kv.key
             val body: String = kv.value.fold("") { acc, x -> acc + x.messageBody }
-            val timestamp = LocalDateTime.now()
+            val timestamp = System.currentTimeMillis()
             val message = Message(sender, timestamp, body, false, null)
             val preview = ContactPreview(sender, timestamp, body)
             Pair(message, preview)

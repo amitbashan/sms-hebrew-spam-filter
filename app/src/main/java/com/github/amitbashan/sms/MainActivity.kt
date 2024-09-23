@@ -59,6 +59,8 @@ import com.github.amitbashan.sms.ui.component.ContactButton
 import com.github.amitbashan.sms.ui.component.ErrorPage
 import com.github.amitbashan.sms.ui.component.MainBottomBar
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
+import java.time.Instant
+import java.time.ZoneId
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
@@ -104,10 +106,11 @@ class MainActivity : ComponentActivity() {
                 verticalArrangement = Arrangement.spacedBy(2.dp),
             ) {
                 sortedPreviews.forEach { preview ->
+                    val timestamp = Instant.ofEpochMilli(preview.timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime()
                     ContactButton(
                         preview.originatingAddress,
                         preview.content,
-                        preview.timestamp,
+                        timestamp,
                         onclickHandler =
                         {
                             val intent = Intent(applicationContext, ChatActivity::class.java)

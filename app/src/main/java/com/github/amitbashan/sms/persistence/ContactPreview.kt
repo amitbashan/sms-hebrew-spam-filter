@@ -20,7 +20,7 @@ import java.time.LocalDateTime
 data class ContactPreview(
     @PrimaryKey
     val originatingAddress: String,
-    val timestamp: LocalDateTime,
+    val timestamp: Long,
     @ColumnInfo
     val content: String,
 )
