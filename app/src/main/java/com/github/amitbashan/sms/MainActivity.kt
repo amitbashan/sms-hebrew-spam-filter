@@ -5,6 +5,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.graphics.fonts.FontStyle
 import android.os.Bundle
+import android.os.PersistableBundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -18,6 +19,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
@@ -54,6 +57,7 @@ import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.ui.component.BulletList
 import com.github.amitbashan.sms.ui.component.ContactButton
 import com.github.amitbashan.sms.ui.component.ErrorPage
+import com.github.amitbashan.sms.ui.component.MainBottomBar
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
 
 class MainActivity : ComponentActivity() {
@@ -116,17 +120,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    override fun onStart() {
-        super.onStart()
-        AppDatabase.initialize(applicationContext)
-        startService(Intent(applicationContext, SmsService::class.java))
-    }
-
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
         requestPermissions()
+        AppDatabase.initialize(applicationContext)
+        startService(Intent(applicationContext, SmsService::class.java))
 
         if (!hasPermissions()) {
             return setContent {
@@ -141,7 +140,9 @@ class MainActivity : ComponentActivity() {
             Scaffold(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(5.dp),
+                    .padding(5.dp)
+                    .imePadding()
+                    .navigationBarsPadding(),
                 topBar = {
                     TopAppBar(
                         title = {
@@ -161,7 +162,8 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     )
-                }
+                },
+                bottomBar = { MainBottomBar() }
             ) { innerPadding ->
                 if (showAppInfoDialog.value) {
                     Dialog(onDismissRequest = { showAppInfoDialog.value = false }) {
@@ -182,7 +184,7 @@ class MainActivity : ComponentActivity() {
                                 Text("Netanya Academic College")
                                 Row {
                                     Text("Topic: ", fontWeight = FontWeight.Bold)
-                                    Text("SMS receiver with Hebrew spam filtering")
+                                    Text("SMS app with Hebrew spam filtering")
                                 }
                                 Text("Developed by:", fontWeight = FontWeight.Bold)
                                 BulletList(

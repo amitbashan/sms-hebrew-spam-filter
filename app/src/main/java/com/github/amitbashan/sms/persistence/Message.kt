@@ -21,4 +21,5 @@ data class Message(
     @ColumnInfo
     val content: String,
     val isMe: Boolean,
+    val messageStatus: MessageStatus?,
 )

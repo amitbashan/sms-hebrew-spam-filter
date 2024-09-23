@@ -5,8 +5,10 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.flow.Flow
+import java.time.LocalDateTime
 
 @Dao
 interface MessageDao {
@@ -14,5 +16,8 @@ interface MessageDao {
     fun getConversationOf(originatingAddress: String): Flow<Conversation>
 
     @Insert(onConflict = OnConflictStrategy.IGNORE)
-    fun pushMessage(message: Message)
+    suspend fun pushMessage(message: Message)
+
+    @Query("UPDATE Message SET messageStatus = :status WHERE Message.originatingAddress = :originatingAddress AND Message.timestamp = :timestamp")
+    fun updateMessageStatus(originatingAddress: String, timestamp: LocalDateTime, status: MessageStatus)
 }

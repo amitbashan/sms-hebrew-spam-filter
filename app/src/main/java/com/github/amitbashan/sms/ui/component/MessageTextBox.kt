@@ -40,7 +40,7 @@ fun MessageTextBox(message: MutableState<String>, onClick: () -> Unit) {
             modifier = Modifier.fillMaxSize(),
             shape = RectangleShape,
             onClick = onClick,
-            enabled = message.value.isEmpty()
+            enabled = message.value.isNotBlank()
         ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Send,

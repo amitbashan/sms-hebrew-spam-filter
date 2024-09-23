@@ -6,30 +6,31 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.Bundle
+import android.util.Log
 import com.github.amitbashan.sms.persistence.Message as DbMessage
-import android.telephony.SmsManager
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,12 +45,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import com.github.amitbashan.sms.goAsync
+import com.github.amitbashan.sms.persistence.MessageStatus
 import com.github.amitbashan.sms.ui.component.ErrorPage
 import com.github.amitbashan.sms.ui.component.Message
 import com.github.amitbashan.sms.ui.component.MessageTextBox
 import com.github.amitbashan.sms.viewmodel.ChatViewModel
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
+import kotlinx.coroutines.launch
 import java.time.LocalDateTime
 
 class ChatActivity : ComponentActivity() {
@@ -58,46 +62,71 @@ class ChatActivity : ComponentActivity() {
     lateinit var originatingAddress: String
 
     private fun sendMessage(message: String) {
+        val db = viewModel.db ?: return
         val timestamp = LocalDateTime.now()
         val smsSentAction = "SMS_SENT_ACTION_${timestamp.hashCode()}"
         val smsDeliveredAction = "SMS_DELIVERED_ACTION_${timestamp.hashCode()}"
         val smsSentPendingIntent =
-            PendingIntent.getBroadcast(applicationContext, 0, Intent(smsSentAction),
-                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
-        val smsDeliveredPendingIntent = PendingIntent.getBroadcast(applicationContext, 0, Intent(smsDeliveredAction), PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE)
+            PendingIntent.getBroadcast(
+                this, 0, Intent(smsSentAction),
+                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+            )
+        val smsDeliveredPendingIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            Intent(smsDeliveredAction),
+            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
+        )
         val smsSentBroadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(contxt: Context?, intent: Intent?) {
-                val msg = DbMessage(originatingAddress, timestamp, message, true)
-                if (viewModel.db != null) {
-                    goAsync {
-                        viewModel.db!!.messageDao().pushMessage(msg)
-                    }
+            override fun onReceive(context: Context?, intent: Intent?) {
+                println("SENT")
+                goAsync {
+                    db.messageDao()
+                        .updateMessageStatus(originatingAddress, timestamp, MessageStatus.Sent)
                 }
             }
         }
         val smsDeliveredBroadcastReceiver = object : BroadcastReceiver() {
-            override fun onReceive(contxt: Context?, intent: Intent?) {
+            override fun onReceive(context: Context?, intent: Intent?) {
                 println("DELIVERED")
+                goAsync {
+                    db.messageDao().updateMessageStatus(
+                        originatingAddress,
+                        timestamp,
+                        MessageStatus.Delivered
+                    )
+                }
             }
         }
 
         registerReceiver(
             smsSentBroadcastReceiver,
             IntentFilter(smsSentAction),
-            RECEIVER_EXPORTED
+            RECEIVER_NOT_EXPORTED
         )
         registerReceiver(
             smsDeliveredBroadcastReceiver,
             IntentFilter(smsDeliveredAction),
-            RECEIVER_EXPORTED
+            RECEIVER_NOT_EXPORTED
         )
-        chatViewModel.smsManager.sendTextMessage(
-            originatingAddress,
-            null,
-            message,
-            smsSentPendingIntent,
-            smsDeliveredPendingIntent
-        )
+        try {
+            chatViewModel.smsManager.sendTextMessage(
+                originatingAddress,
+                null,
+                message,
+                smsSentPendingIntent,
+                smsDeliveredPendingIntent
+            )
+            val msg =
+                DbMessage(originatingAddress, timestamp, message, true, null)
+            lifecycleScope.launch {
+                db.messageDao().pushMessage(msg)
+            }
+        } catch (e: Exception) {
+            Log.d("ChatActivity", e.toString())
+            Toast.makeText(applicationContext, "Failed to send SMS message", Toast.LENGTH_LONG)
+                .show()
+        }
         unregisterReceiver(smsDeliveredBroadcastReceiver)
         unregisterReceiver(smsSentBroadcastReceiver)
     }
@@ -121,9 +150,29 @@ class ChatActivity : ComponentActivity() {
                         .padding(3.dp),
                     horizontalArrangement = if (message.isMe) {
                         Arrangement.End
-                    } else { Arrangement.Start }
+                    } else {
+                        Arrangement.Start
+                    }
                 ) {
                     Message(message.content, message.isMe)
+                    if (message.isMe) {
+                        when (message.messageStatus) {
+                            null -> Icon(
+                                Icons.Default.KeyboardArrowDown,
+                                contentDescription = "Pending"
+                            )
+
+                            MessageStatus.Sent -> Icon(
+                                Icons.AutoMirrored.Filled.Send,
+                                contentDescription = "Sent"
+                            )
+
+                            MessageStatus.Delivered -> Icon(
+                                Icons.Default.Check,
+                                contentDescription = "Delivered"
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -134,7 +183,8 @@ class ChatActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         originatingAddress =
-            intent.getStringExtra("contact") ?: return setContent { ErrorPage("Unable to load chat") }
+            intent.getStringExtra("contact")
+                ?: return setContent { ErrorPage("Unable to load chat") }
 
         setContent {
             val message = remember { mutableStateOf("") }
@@ -158,6 +208,7 @@ class ChatActivity : ComponentActivity() {
                         message,
                         onClick = {
                             sendMessage(message.value)
+                            message.value = ""
                         }
                     )
                 }

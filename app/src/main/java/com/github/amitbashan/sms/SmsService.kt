@@ -4,7 +4,6 @@ import android.app.Service
 import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
-import androidx.room.Room
 import com.github.amitbashan.sms.persistence.AppDatabase
 
 class SmsService : Service() {
@@ -15,7 +14,11 @@ class SmsService : Service() {
     override fun onCreate() {
         super.onCreate()
         AppDatabase.initialize(applicationContext)
-        registerReceiver(smsReceiver, IntentFilter("android.provider.Telephony.SMS_RECEIVED"))
+        registerReceiver(
+            smsReceiver,
+            IntentFilter("SMS_HEBREW_SPAM_FILTER_APP_RECEIVER"),
+            RECEIVER_NOT_EXPORTED
+        )
     }
 
     override fun onDestroy() {
