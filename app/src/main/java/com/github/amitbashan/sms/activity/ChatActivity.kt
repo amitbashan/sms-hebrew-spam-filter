@@ -68,7 +68,7 @@ class ChatActivity : ComponentActivity() {
                         .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
                         .putExtra("com.github.amitbashan.sms.timestamp", timestamp)
                         .putExtra("com.github.amitbashan.sms.numParts", numParts),
-                    PendingIntent.FLAG_IMMUTABLE
+                    PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
                 )
             }
         val smsDeliveredPendingIntents =
@@ -80,7 +80,7 @@ class ChatActivity : ComponentActivity() {
                         .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
                         .putExtra("com.github.amitbashan.sms.timestamp", timestamp)
                         .putExtra("com.github.amitbashan.sms.numParts", numParts),
-                    PendingIntent.FLAG_IMMUTABLE
+                    PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
                 )
             }
 
