@@ -11,7 +11,6 @@ import com.github.amitbashan.sms.SmsService
     entities = [Contact::class, ContactPreview::class, Message::class],
     version = 1
 )
-@TypeConverters(DateTypeConverters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun contactDao(): ContactDao
 
@@ -27,7 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
                 dbInstance = Room.databaseBuilder(
                     context,
                     AppDatabase::class.java,
-                    "sms_db_tes22332"
+                    "sms_db_123321"
                 ).build()
             }
         }

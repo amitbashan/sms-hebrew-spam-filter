@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -30,7 +31,7 @@ fun ContactButton(
     timeOfLastMessage: LocalDateTime = LocalDateTime.now(),
     onclickHandler: () -> Unit = {},
 ) {
-    OutlinedButton(onClick = onclickHandler, shape = RoundedCornerShape(5.dp)) {
+    FilledTonalButton(onClick = onclickHandler, shape = RoundedCornerShape(10.dp)) {
         Column {
             Text(contactName)
             Row(

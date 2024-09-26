@@ -18,7 +18,7 @@ fun ErrorPage(message: String) {
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
-            "No SMS messages have been received or sent yet...",
+            message,
             fontSize = 25.sp,
             textAlign = TextAlign.Center
         )

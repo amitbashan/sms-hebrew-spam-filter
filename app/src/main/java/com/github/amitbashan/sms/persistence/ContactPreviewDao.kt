@@ -8,9 +8,9 @@ import java.time.LocalDateTime
 
 @Dao
 interface ContactPreviewDao {
-    @Query("SELECT * FROM ContactPreview")
-    fun getAll(): Flow<List<ContactPreview>>
+    @Query("SELECT * FROM ContactPreview JOIN Contact ON ContactPreview.originatingAddress = Contact.originatingAddress WHERE Contact.isSpammer = :spammers")
+    fun getAll(spammers: Boolean): Flow<List<ContactPreview>>
 
     @Upsert
-    fun upsert(preview: ContactPreview)
+    suspend fun upsert(preview: ContactPreview)
 }

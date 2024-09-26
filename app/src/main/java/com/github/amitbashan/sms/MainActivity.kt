@@ -16,49 +16,66 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Card
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
+import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
+import com.github.amitbashan.sms.activity.AboutActivity
 import com.github.amitbashan.sms.activity.ChatActivity
 import com.github.amitbashan.sms.persistence.AppDatabase
-import com.github.amitbashan.sms.ui.component.BulletList
+import com.github.amitbashan.sms.persistence.Contact
+import com.github.amitbashan.sms.persistence.ContactPreview
+import com.github.amitbashan.sms.ui.component.AddContactDialog
 import com.github.amitbashan.sms.ui.component.ContactButton
+import com.github.amitbashan.sms.ui.component.ContactList
+import com.github.amitbashan.sms.ui.component.DrawerSheet
 import com.github.amitbashan.sms.ui.component.ErrorPage
-import com.github.amitbashan.sms.ui.component.MainBottomBar
+import com.github.amitbashan.sms.ui.component.SearchBarInputField
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 
@@ -91,38 +108,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    @Composable
-    fun ContactList(innerPadding: PaddingValues) {
-        val db = viewModel.db ?: return
-        val previews by db.contactPreviewDao().getAll()
-            .collectAsState(initial = emptyList())
-        val sortedPreviews = previews.sortedByDescending { preview -> preview.timestamp }
-        if (sortedPreviews.isEmpty()) {
-            ErrorPage("No SMS messages have been received or sent yet...")
-        } else {
-            Column(
-                modifier = Modifier
-                    .padding(innerPadding),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                sortedPreviews.forEach { preview ->
-                    val timestamp = Instant.ofEpochMilli(preview.timestamp).atZone(ZoneId.systemDefault()).toLocalDateTime()
-                    ContactButton(
-                        preview.originatingAddress,
-                        preview.content,
-                        timestamp,
-                        onclickHandler =
-                        {
-                            val intent = Intent(applicationContext, ChatActivity::class.java)
-                            intent.putExtra("contact", preview.originatingAddress)
-                            startActivity(intent)
-                        }
-                    )
-                }
-            }
-        }
-    }
-
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -138,70 +123,69 @@ class MainActivity : ComponentActivity() {
 
         enableEdgeToEdge()
         setContent {
-            val showAppInfoDialog = remember { mutableStateOf(false) }
+            val showAddContactDialog = remember { mutableStateOf(false) }
+            val addContactTextFieldValue = remember { mutableStateOf("") }
+            val scope = rememberCoroutineScope()
+            val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+            val previews by (viewModel.db ?: return@setContent).contactPreviewDao().getAll(false)
+                .collectAsState(initial = emptyList())
 
-            Scaffold(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(5.dp)
-                    .imePadding()
-                    .navigationBarsPadding(),
-                topBar = {
-                    TopAppBar(
-                        title = {
-                            Column(modifier = Modifier.fillMaxWidth()) {
-                                Text("SMS", fontSize = 20.sp)
-                                Text("with Hebrew spam filter", fontSize = 15.sp)
-                            }
-                        },
-                        actions = {
-                            IconButton(onClick = {
-                                showAppInfoDialog.value = true
-                            }) {
-                                Icon(
-                                    imageVector = Icons.Filled.Info,
-                                    contentDescription = "App info"
-                                )
-                            }
+            ModalNavigationDrawer(
+                drawerContent = {
+                    DrawerSheet(
+                        aboutOnClick = {
+                            val intent = Intent(applicationContext, AboutActivity::class.java)
+                            startActivity(intent)
                         }
                     )
-                },
-                bottomBar = { MainBottomBar() }
-            ) { innerPadding ->
-                if (showAppInfoDialog.value) {
-                    Dialog(onDismissRequest = { showAppInfoDialog.value = false }) {
-                        Card(
+                }, drawerState = drawerState
+            ) {
+                Scaffold(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(5.dp)
+                        .imePadding()
+                        .navigationBarsPadding(),
+                    topBar = {
+                        SearchBar(
                             modifier = Modifier
-                                .height(IntrinsicSize.Min)
-                                .wrapContentHeight(),
-                            shape = RoundedCornerShape(12.dp),
-                        ) {
-                            Column(
-                                modifier = Modifier.padding(5.dp),
-                            ) {
-                                Text(
-                                    "Degree Final Project",
-                                    fontSize = 15.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text("Netanya Academic College")
-                                Row {
-                                    Text("Topic: ", fontWeight = FontWeight.Bold)
-                                    Text("SMS app with Hebrew spam filtering")
-                                }
-                                Text("Developed by:", fontWeight = FontWeight.Bold)
-                                BulletList(
-                                    listItems = listOf(
-                                        "Amit Bashan",
-                                        "Tomer Sasson",
-                                        "Hila Damin"
-                                    )
-                                )
-                            }
+                                .fillMaxWidth()
+                                .absolutePadding(5.dp, 7.dp, 5.dp, 10.dp),
+                            inputField = { SearchBarInputField(scope, drawerState) },
+                            expanded = false,
+                            onExpandedChange = {}
+                        ) { }
+                    },
+                    floatingActionButton = {
+                        FloatingActionButton(onClick = { showAddContactDialog.value = true }) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = "Add contact"
+                            )
                         }
                     }
+                ) { innerPadding ->
+                    AddContactDialog(showAddContactDialog, addContactTextFieldValue, onClick = {
+                        val db = viewModel.db ?: return@AddContactDialog;
+                        val originatingAddress = addContactTextFieldValue.value
+                        lifecycleScope.launch {
+                            db.contactDao().upsert(Contact(originatingAddress, false))
+                            db.contactPreviewDao().upsert(
+                                ContactPreview(
+                                    originatingAddress,
+                                    System.currentTimeMillis(),
+                                    null
+                                )
+                            )
+                        }
+                        showAddContactDialog.value = false
+                    })
+                    ContactList(innerPadding, previews, buttonOnClick = {
+                        val intent = Intent(applicationContext, ChatActivity::class.java)
+                            .putExtra("com.github.amitbashan.sms.originatingAddress", it)
+                        startActivity(intent)
+                    })
                 }
-                ContactList(innerPadding)
             }
         }
     }

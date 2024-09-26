@@ -18,7 +18,6 @@ import java.time.LocalDateTime
 data class Message(
     val originatingAddress: String,
     val timestamp: Long,
-    @ColumnInfo
     val content: String,
     val isMe: Boolean,
     val messageStatus: MessageStatus?,

@@ -1,37 +1,30 @@
 package com.github.amitbashan.sms.activity
 
 import android.app.PendingIntent
-import android.content.BroadcastReceiver
-import android.content.Context
 import android.content.Intent
-import android.content.IntentFilter
 import android.os.Bundle
-import android.util.Log
 import com.github.amitbashan.sms.persistence.Message as DbMessage
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -45,13 +38,14 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
-import com.github.amitbashan.sms.goAsync
-import com.github.amitbashan.sms.persistence.MessageStatus
+import com.github.amitbashan.sms.SmsService
+import com.github.amitbashan.sms.persistence.ContactPreview
 import com.github.amitbashan.sms.ui.component.ErrorPage
 import com.github.amitbashan.sms.ui.component.Message
-import com.github.amitbashan.sms.ui.component.MessageTextBox
+import com.github.amitbashan.sms.ui.component.ChatInput
 import com.github.amitbashan.sms.viewmodel.ChatViewModel
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
 import kotlinx.coroutines.launch
@@ -59,67 +53,53 @@ import kotlinx.coroutines.launch
 class ChatActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
     private val chatViewModel: ChatViewModel by viewModels()
-    lateinit var originatingAddress: String
-    private val smsSentAction = "SMS_SENT_ACTION_${this.hashCode()}"
-    private val smsDeliveredAction = "SMS_DELIVERED_ACTION_${this.hashCode()}"
-    private val smsSentBroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val db = viewModel.db ?: return
-            val timestamp = intent?.getLongExtra("timestamp", Long.MAX_VALUE) ?: return
 
-            goAsync {
-                db.messageDao()
-                    .updateMessageStatus(originatingAddress, timestamp, MessageStatus.Sent)
-            }
-        }
-    }
-    private val smsDeliveredBroadcastReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            val db = viewModel.db ?: return
-            val timestamp = intent?.getLongExtra("timestamp", Long.MAX_VALUE) ?: return
-
-            goAsync {
-                db.messageDao().updateMessageStatus(
-                    originatingAddress,
-                    timestamp,
-                    MessageStatus.Delivered
-                )
-            }
-        }
-    }
-
-    private fun sendMessage(message: String) {
+    private fun sendMessage(originatingAddress: String, message: String) {
         val db = viewModel.db ?: return
         val timestamp = System.currentTimeMillis()
-        val smsSentIntent = Intent(smsSentAction).putExtra("timestamp", timestamp)
-        val smsDeliveredIntent = Intent(smsDeliveredAction).putExtra("timestamp", timestamp)
-        val smsSentPendingIntent =
-            PendingIntent.getBroadcast(
-                applicationContext, 0, smsSentIntent,
-                PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
-            )
-        val smsDeliveredPendingIntent = PendingIntent.getBroadcast(
-            applicationContext,
-            0,
-            smsDeliveredIntent,
-            PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
-        )
+        val divMessage = chatViewModel.smsManager.divideMessage(message)
+        val numParts = divMessage.size
+        val smsSentPendingIntents =
+            (1.rangeTo(numParts)).map {
+                PendingIntent.getBroadcast(
+                    this,
+                    it,
+                    Intent(SmsService.SMS_SENT_ACTION)
+                        .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
+                        .putExtra("com.github.amitbashan.sms.timestamp", timestamp)
+                        .putExtra("com.github.amitbashan.sms.numParts", numParts),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            }
+        val smsDeliveredPendingIntents =
+            (1.rangeTo(numParts)).map {
+                PendingIntent.getBroadcast(
+                    this,
+                    it,
+                    Intent(SmsService.SMS_DELIVERED_ACTION)
+                        .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
+                        .putExtra("com.github.amitbashan.sms.timestamp", timestamp)
+                        .putExtra("com.github.amitbashan.sms.numParts", numParts),
+                    PendingIntent.FLAG_IMMUTABLE
+                )
+            }
 
         try {
-            chatViewModel.smsManager.sendTextMessage(
+            chatViewModel.smsManager.sendMultipartTextMessage(
                 originatingAddress,
                 null,
-                message,
-                smsSentPendingIntent,
-                smsDeliveredPendingIntent
+                divMessage,
+                ArrayList(smsSentPendingIntents),
+                ArrayList(smsDeliveredPendingIntents)
             )
             val msg =
                 DbMessage(originatingAddress, timestamp, message, true, null)
             lifecycleScope.launch {
                 db.messageDao().pushMessage(msg)
+                db.contactPreviewDao()
+                    .upsert(ContactPreview(originatingAddress, timestamp, message))
             }
-        } catch (e: Exception) {
-            Log.d("ChatActivity", e.toString())
+        } catch (_: Exception) {
             Toast.makeText(applicationContext, "Failed to send SMS message", Toast.LENGTH_LONG)
                 .show()
         }
@@ -130,44 +110,17 @@ class ChatActivity : ComponentActivity() {
         val db = viewModel.db ?: return ErrorPage("Error: database is uninitialized")
         val conversation by db.messageDao().getConversationOf(originatingAddress)
             .collectAsState(initial = emptyList())
-        return LazyColumn(
+
+        LazyColumn(
             Modifier
                 .padding(innerPadding)
+                .padding(5.dp)
                 .fillMaxSize(),
             contentPadding = WindowInsets.navigationBars.asPaddingValues(),
             horizontalAlignment = Alignment.Start
         ) {
-            items(conversation) { message ->
-                Row(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(3.dp),
-                    horizontalArrangement = if (message.isMe) {
-                        Arrangement.End
-                    } else {
-                        Arrangement.Start
-                    }
-                ) {
-                    Message(message.content, message.isMe)
-                    if (message.isMe) {
-                        when (message.messageStatus) {
-                            null -> Icon(
-                                Icons.Default.KeyboardArrowDown,
-                                contentDescription = "Pending"
-                            )
-
-                            MessageStatus.Sent -> Icon(
-                                Icons.AutoMirrored.Filled.Send,
-                                contentDescription = "Sent"
-                            )
-
-                            MessageStatus.Delivered -> Icon(
-                                Icons.Default.Check,
-                                contentDescription = "Delivered"
-                            )
-                        }
-                    }
-                }
+            items(conversation) {
+                Message(it.content, it.isMe, it.messageStatus)
             }
         }
     }
@@ -176,12 +129,13 @@ class ChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        originatingAddress =
-            intent.getStringExtra("contact")
+        val originatingAddress =
+            intent.getStringExtra("com.github.amitbashan.sms.originatingAddress")
                 ?: return setContent { ErrorPage("Unable to load chat") }
 
         setContent {
             val message = remember { mutableStateOf("") }
+            val focusManager = LocalFocusManager.current
 
             Scaffold(
                 modifier = Modifier
@@ -189,7 +143,10 @@ class ChatActivity : ComponentActivity() {
                     .navigationBarsPadding(),
                 topBar = {
                     TopAppBar(title = { Text(originatingAddress) }, navigationIcon = {
-                        IconButton(onClick = { finish() }) {
+                        IconButton(onClick = {
+                            focusManager.clearFocus()
+                            finish()
+                        }) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                                 contentDescription = "Go back"
@@ -198,10 +155,10 @@ class ChatActivity : ComponentActivity() {
                     })
                 },
                 bottomBar = {
-                    MessageTextBox(
+                    ChatInput(
                         message,
                         onClick = {
-                            sendMessage(message.value)
+                            sendMessage(originatingAddress, message.value)
                             message.value = ""
                         }
                     )
@@ -210,25 +167,5 @@ class ChatActivity : ComponentActivity() {
                 MessageList(innerPadding, originatingAddress)
             }
         }
-    }
-
-    override fun onResume() {
-        super.onResume()
-        registerReceiver(
-            smsSentBroadcastReceiver,
-            IntentFilter(smsSentAction),
-            RECEIVER_EXPORTED
-        )
-        registerReceiver(
-            smsDeliveredBroadcastReceiver,
-            IntentFilter(smsDeliveredAction),
-            RECEIVER_EXPORTED
-        )
-    }
-
-    override fun onStop() {
-        super.onStop()
-        unregisterReceiver(smsSentBroadcastReceiver)
-        unregisterReceiver(smsDeliveredBroadcastReceiver)
     }
 }
