@@ -13,4 +13,7 @@ interface ContactPreviewDao {
 
     @Upsert
     suspend fun upsert(preview: ContactPreview)
+
+    @Query("SELECT * FROM ContactPreview WHERE originatingAddress LIKE :like")
+    fun searchLike(like: String): Flow<List<ContactPreview>>
 }
