@@ -54,6 +54,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
+    val SEARCH_DEBOUNCE_DELAY_MILIS = 400L
 
     fun hasPermissions(): Boolean {
         val needsReadSmsPermission = ContextCompat.checkSelfPermission(
@@ -96,7 +97,7 @@ class MainActivity : ComponentActivity() {
 
         val db = viewModel.db ?: return
         val searchText = MutableStateFlow("")
-        val previewsFlow = searchText.debounce(500).distinctUntilChanged()
+        val previewsFlow = searchText.debounce(SEARCH_DEBOUNCE_DELAY_MILIS).distinctUntilChanged()
             .flatMapLatest {
                 if (it.isBlank() || !"[a-zA-Z0-9 ]+".toRegex().matches(it)) {
                     db.contactPreviewDao().getAll(false)
