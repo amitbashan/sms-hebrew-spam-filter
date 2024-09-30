@@ -3,13 +3,11 @@ package com.github.amitbashan.sms.activity
 import android.app.PendingIntent
 import android.content.Intent
 import android.os.Bundle
-import com.github.amitbashan.sms.persistence.Message as DbMessage
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.viewModels
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
@@ -18,11 +16,8 @@ import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -43,12 +38,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
 import com.github.amitbashan.sms.SmsService
 import com.github.amitbashan.sms.persistence.ContactPreview
+import com.github.amitbashan.sms.ui.component.ChatInput
 import com.github.amitbashan.sms.ui.component.ErrorPage
 import com.github.amitbashan.sms.ui.component.Message
-import com.github.amitbashan.sms.ui.component.ChatInput
 import com.github.amitbashan.sms.viewmodel.ChatViewModel
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
 import kotlinx.coroutines.launch
+import com.github.amitbashan.sms.persistence.Message as DbMessage
 
 class ChatActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
@@ -65,7 +61,10 @@ class ChatActivity : ComponentActivity() {
                     this,
                     it,
                     Intent(SmsService.SMS_SENT_ACTION)
-                        .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
+                        .putExtra(
+                            "com.github.amitbashan.sms.originatingAddress",
+                            originatingAddress
+                        )
                         .putExtra("com.github.amitbashan.sms.timestamp", timestamp)
                         .putExtra("com.github.amitbashan.sms.numParts", numParts),
                     PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE
@@ -77,7 +76,10 @@ class ChatActivity : ComponentActivity() {
                     this,
                     it,
                     Intent(SmsService.SMS_DELIVERED_ACTION)
-                        .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
+                        .putExtra(
+                            "com.github.amitbashan.sms.originatingAddress",
+                            originatingAddress
+                        )
                         .putExtra("com.github.amitbashan.sms.timestamp", timestamp)
                         .putExtra("com.github.amitbashan.sms.numParts", numParts),
                     PendingIntent.FLAG_ONE_SHOT or PendingIntent.FLAG_IMMUTABLE

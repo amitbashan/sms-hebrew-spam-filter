@@ -2,22 +2,20 @@ package com.github.amitbashan.sms
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import androidx.core.app.NotificationCompat
+import com.github.amitbashan.sms.activity.ChatActivity
 import com.github.amitbashan.sms.persistence.AppDatabase
-import com.github.amitbashan.sms.persistence.Contact
 import com.github.amitbashan.sms.persistence.ContactPreview
 import com.github.amitbashan.sms.persistence.Message
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -41,13 +39,15 @@ class SmsReceiver : BroadcastReceiver() {
         private val CHANNEL_ID = "com.github.amitbashan.sms.NOTIF_CHANNEL"
         private val notificationChannel = NotificationChannel(
             CHANNEL_ID,
-            "SMSBREW_NOTIF_CHANNEL",
+            "SMSBrew",
             NotificationManager.IMPORTANCE_HIGH
         )
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent == null || context == null) return
+        val notificationManager = context.getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(notificationChannel)
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
         val broadcasts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         val groupedBroadcasts = broadcasts.groupBy { it.displayOriginatingAddress }
@@ -69,17 +69,28 @@ class SmsReceiver : BroadcastReceiver() {
         goAsync {
             pairs.forEach {
                 val originatingAddress = it.first.originatingAddress
+
                 contactDao.insertIfDoesntExist(originatingAddress, false)
                 messageDao.pushMessage(it.first)
                 previewDao.upsert(it.second)
+
+                val activityIntent = Intent(context, ChatActivity::class.java)
+                    .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
+                val pendingIntent = PendingIntent.getActivity(
+                    context,
+                    0,
+                    activityIntent,
+                    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+                )
                 val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setDefaults(NotificationCompat.DEFAULT_ALL)
                     .setSmallIcon(android.R.drawable.ic_popup_reminder)
-                    .setContentTitle(it.first.originatingAddress)
+                    .setContentTitle(originatingAddress)
                     .setContentText(it.first.content)
                     .setStyle(NotificationCompat.BigTextStyle().bigText(it.first.content))
                     .setPriority(NotificationCompat.PRIORITY_HIGH)
-                val notificationManager = context.getSystemService(NotificationManager::class.java)
-                notificationManager.createNotificationChannel(notificationChannel)
+                    .setContentIntent(pendingIntent)
+
                 notificationManager.notify(
                     (System.currentTimeMillis() % Int.MAX_VALUE.toLong()).toInt(),
                     builder.build()

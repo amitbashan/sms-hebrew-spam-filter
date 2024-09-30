@@ -7,10 +7,7 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.os.IBinder
 import com.github.amitbashan.sms.persistence.AppDatabase
-import com.github.amitbashan.sms.persistence.Message
 import com.github.amitbashan.sms.persistence.MessageStatus
-import kotlinx.coroutines.flow.count
-import java.util.HashMap
 import java.util.Timer
 import java.util.TimerTask
 
@@ -29,9 +26,12 @@ class SmsService : Service() {
         private val smsSentBroadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val db = AppDatabase.getInstance() ?: return
-                val originatingAddress = intent?.getStringExtra("com.github.amitbashan.sms.originatingAddress") ?: return
-                val timestamp = intent.getLongExtra("com.github.amitbashan.sms.timestamp", Long.MAX_VALUE)
-                val numParts = intent.getIntExtra("com.github.amitbashan.sms.numParts", Int.MAX_VALUE)
+                val originatingAddress =
+                    intent?.getStringExtra("com.github.amitbashan.sms.originatingAddress") ?: return
+                val timestamp =
+                    intent.getLongExtra("com.github.amitbashan.sms.timestamp", Long.MAX_VALUE)
+                val numParts =
+                    intent.getIntExtra("com.github.amitbashan.sms.numParts", Int.MAX_VALUE)
                 val key = Pair(originatingAddress, timestamp)
 
                 if (!smsSentCountMap.containsKey(key)) {
@@ -53,9 +53,12 @@ class SmsService : Service() {
         private val smsDeliveredBroadcastReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
                 val db = AppDatabase.getInstance() ?: return
-                val originatingAddress = intent?.getStringExtra("com.github.amitbashan.sms.originatingAddress") ?: return
-                val timestamp = intent.getLongExtra("com.github.amitbashan.sms.timestamp", Long.MAX_VALUE)
-                val numParts = intent.getIntExtra("com.github.amitbashan.sms.numParts", Int.MAX_VALUE)
+                val originatingAddress =
+                    intent?.getStringExtra("com.github.amitbashan.sms.originatingAddress") ?: return
+                val timestamp =
+                    intent.getLongExtra("com.github.amitbashan.sms.timestamp", Long.MAX_VALUE)
+                val numParts =
+                    intent.getIntExtra("com.github.amitbashan.sms.numParts", Int.MAX_VALUE)
                 val key = Pair(originatingAddress, timestamp)
                 smsSentCountMap[key] = smsSentCountMap.getOrDefault(key, 0) + 1
                 val count = smsSentCountMap[key]
@@ -68,7 +71,11 @@ class SmsService : Service() {
                     smsDeliveredCountMap.remove(key)
                     goAsync {
                         db.messageDao()
-                            .updateMessageStatus(originatingAddress, timestamp, MessageStatus.Delivered)
+                            .updateMessageStatus(
+                                originatingAddress,
+                                timestamp,
+                                MessageStatus.Delivered
+                            )
                     }
                 }
             }
@@ -84,13 +91,19 @@ class SmsService : Service() {
             RECEIVER_EXPORTED
         )
         registerReceiver(smsSentBroadcastReceiver, IntentFilter(SMS_SENT_ACTION), RECEIVER_EXPORTED)
-        registerReceiver(smsDeliveredBroadcastReceiver, IntentFilter(SMS_DELIVERED_ACTION), RECEIVER_EXPORTED)
+        registerReceiver(
+            smsDeliveredBroadcastReceiver,
+            IntentFilter(SMS_DELIVERED_ACTION),
+            RECEIVER_EXPORTED
+        )
         timeoutTimer.schedule(
             object : TimerTask() {
                 override fun run() {
                     val timestamp = System.currentTimeMillis()
-                    smsSentTimeoutMap = smsSentTimeoutMap.filterNot { timestamp - it.value > TIMEOUT_PERIOD_MINS_MILIS } as HashMap<Pair<String, Long>, Long>
-                    smsDeliveredTimeoutMap = smsDeliveredTimeoutMap.filterNot { timestamp - it.value > TIMEOUT_PERIOD_MINS_MILIS } as HashMap<Pair<String, Long>, Long>
+                    smsSentTimeoutMap =
+                        smsSentTimeoutMap.filterNot { timestamp - it.value > TIMEOUT_PERIOD_MINS_MILIS } as HashMap<Pair<String, Long>, Long>
+                    smsDeliveredTimeoutMap =
+                        smsDeliveredTimeoutMap.filterNot { timestamp - it.value > TIMEOUT_PERIOD_MINS_MILIS } as HashMap<Pair<String, Long>, Long>
                 }
             },
             0,

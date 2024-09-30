@@ -1,7 +1,6 @@
 package com.github.amitbashan.sms.activity
 
 import android.os.Bundle
-import android.os.PersistableBundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -76,8 +75,15 @@ class AboutActivity : ComponentActivity() {
                         "SMSBrew is an SMS app with Hebrew spam filtering capabilities powered by a fine-tuned BERT model, along with a database of malicious URL patterns.\nSMSBrew was developed by:",
                         fontSize = 16.sp,
                     )
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.absolutePadding(top = 10.dp, bottom = 10.dp)) {
-                        listOf("Amit Bashan (@amitbashan)", "Hila Damin (@hida10)", "Tomer Sasson (@asasson)").forEach {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.absolutePadding(top = 10.dp, bottom = 10.dp)
+                    ) {
+                        listOf(
+                            "Amit Bashan (@amitbashan)",
+                            "Hila Damin (@hida10)",
+                            "Tomer Sasson (@asasson)"
+                        ).forEach {
                             Row(
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {

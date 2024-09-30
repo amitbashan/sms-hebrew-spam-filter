@@ -19,7 +19,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 
 @Composable
-fun AddContactDialog(showDialog: MutableState<Boolean>, addContactTextFieldValue: MutableState<String>, onClick: () -> Unit) {
+fun AddContactDialog(
+    showDialog: MutableState<Boolean>,
+    addContactTextFieldValue: MutableState<String>,
+    onClick: () -> Unit
+) {
     if (showDialog.value) {
         val focusManager = LocalFocusManager.current
 
@@ -34,12 +38,17 @@ fun AddContactDialog(showDialog: MutableState<Boolean>, addContactTextFieldValue
                     .wrapContentHeight(),
                 shape = RoundedCornerShape(12.dp),
             ) {
-                TextField(addContactTextFieldValue.value, modifier = Modifier.fillMaxWidth(), placeholder = { Text("Contact address...") }, onValueChange = { addContactTextFieldValue.value = it })
+                TextField(
+                    addContactTextFieldValue.value,
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text("Contact address...") },
+                    onValueChange = { addContactTextFieldValue.value = it })
                 Button(
                     onClick = onClick,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RectangleShape,
-                    enabled = PhoneNumberUtils.isGlobalPhoneNumber(addContactTextFieldValue.value)) {
+                    enabled = PhoneNumberUtils.isGlobalPhoneNumber(addContactTextFieldValue.value)
+                ) {
                     Text("Add")
                 }
             }

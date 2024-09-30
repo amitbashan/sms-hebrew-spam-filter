@@ -4,8 +4,6 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.TypeConverters
-import com.github.amitbashan.sms.SmsService
 
 @Database(
     entities = [Contact::class, ContactPreview::class, Message::class],

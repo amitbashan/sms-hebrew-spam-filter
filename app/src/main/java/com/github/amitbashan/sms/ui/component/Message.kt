@@ -19,14 +19,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.amitbashan.sms.persistence.MessageStatus
 
 @Preview
 @Composable
-fun Message(message: String = "Hello world!", isMe: Boolean = false, messageStatus: MessageStatus? = null) {
+fun Message(
+    message: String = "Hello world!",
+    isMe: Boolean = false,
+    messageStatus: MessageStatus? = null
+) {
     Row(
         Modifier
             .fillMaxSize()
@@ -60,14 +63,16 @@ fun Message(message: String = "Hello world!", isMe: Boolean = false, messageStat
             }
         }
         Box(
-            Modifier.wrapContentSize()
+            Modifier
+                .wrapContentSize()
                 .background(
                     if (isMe) {
                         MaterialTheme.colorScheme.secondary
                     } else {
                         MaterialTheme.colorScheme.tertiaryContainer
                     }, RoundedCornerShape(10.dp)
-                ).padding(5.dp)
+                )
+                .padding(5.dp)
         ) {
             Text(
                 message, color = if (isMe) {

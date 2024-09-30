@@ -1,9 +1,7 @@
 package com.github.amitbashan.sms.persistence
 
-import androidx.room.ColumnInfo
 import androidx.room.Entity
 import androidx.room.ForeignKey
-import java.time.LocalDateTime
 
 @Entity(
     primaryKeys = ["originatingAddress", "timestamp"],
