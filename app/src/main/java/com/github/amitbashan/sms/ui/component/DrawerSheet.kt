@@ -24,9 +24,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-@Preview
 @Composable
-fun DrawerSheet(aboutOnClick: () -> Unit) {
+fun DrawerSheet(blockAndSpamContactsOnClick: () -> Unit, aboutOnClick: () -> Unit) {
     ModalDrawerSheet() {
         Text(buildAnnotatedString {
             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
@@ -50,7 +49,7 @@ fun DrawerSheet(aboutOnClick: () -> Unit) {
                 }
             },
             selected = false,
-            onClick = { /*TODO*/ }
+            onClick = blockAndSpamContactsOnClick,
         )
         HorizontalDivider(
             modifier = Modifier.fillMaxWidth(0.9f)

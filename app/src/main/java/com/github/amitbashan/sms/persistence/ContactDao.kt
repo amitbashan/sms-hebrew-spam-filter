@@ -14,4 +14,16 @@ interface ContactDao {
 
     @Upsert
     suspend fun upsert(contact: Contact)
+
+    @Query("SELECT EXISTS (SELECT * FROM Contact WHERE Contact.originatingAddress = :originatingAddress)")
+    suspend fun exists(originatingAddress: String): Boolean
+
+    @Query("UPDATE Contact SET isSpammer = :isSpammer WHERE originatingAddress = :originatingAddress")
+    suspend fun setSpamStatus(originatingAddress: String, isSpammer: Boolean)
+
+    suspend fun insertIfDoesntExist(originatingAddress: String, isSpammer: Boolean) {
+        if (!exists(originatingAddress)) {
+            upsert(Contact(originatingAddress, isSpammer))
+        }
+    }
 }

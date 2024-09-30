@@ -26,7 +26,7 @@ abstract class AppDatabase : RoomDatabase() {
                 dbInstance = Room.databaseBuilder(
                     context,
                     AppDatabase::class.java,
-                    "sms_db_123321"
+                    "testfb123"
                 ).build()
             }
         }

@@ -1,9 +1,12 @@
 package com.github.amitbashan.sms
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
+import androidx.core.app.NotificationCompat
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.Contact
 import com.github.amitbashan.sms.persistence.ContactPreview
@@ -34,8 +37,17 @@ fun BroadcastReceiver.goAsync(
 }
 
 class SmsReceiver : BroadcastReceiver() {
+    companion object {
+        private val CHANNEL_ID = "com.github.amitbashan.sms.NOTIF_CHANNEL"
+        private val notificationChannel = NotificationChannel(
+            CHANNEL_ID,
+            "SMSBREW_NOTIF_CHANNEL",
+            NotificationManager.IMPORTANCE_HIGH
+        )
+    }
+
     override fun onReceive(context: Context?, intent: Intent?) {
-        if (intent == null) return
+        if (intent == null || context == null) return
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
         val broadcasts = Telephony.Sms.Intents.getMessagesFromIntent(intent)
         val groupedBroadcasts = broadcasts.groupBy { it.displayOriginatingAddress }
@@ -57,9 +69,21 @@ class SmsReceiver : BroadcastReceiver() {
         goAsync {
             pairs.forEach {
                 val originatingAddress = it.first.originatingAddress
-                contactDao.upsert(Contact(originatingAddress, false))
+                contactDao.insertIfDoesntExist(originatingAddress, false)
                 messageDao.pushMessage(it.first)
                 previewDao.upsert(it.second)
+                val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+                    .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                    .setContentTitle(it.first.originatingAddress)
+                    .setContentText(it.first.content)
+                    .setStyle(NotificationCompat.BigTextStyle().bigText(it.first.content))
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                val notificationManager = context.getSystemService(NotificationManager::class.java)
+                notificationManager.createNotificationChannel(notificationChannel)
+                notificationManager.notify(
+                    (System.currentTimeMillis() % Int.MAX_VALUE.toLong()).toInt(),
+                    builder.build()
+                )
             }
         }
     }

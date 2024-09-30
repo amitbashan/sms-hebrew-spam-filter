@@ -37,13 +37,15 @@ import kotlinx.coroutines.launch
 fun SearchBarInputField(
     scope: CoroutineScope,
     drawerState: DrawerState,
-    text: MutableStateFlow<String>
+    text: MutableStateFlow<String>,
+    activeLongClick: MutableState<Int?>,
 ) {
     val query by text.collectAsState(initial = "")
 
     SearchBarDefaults.InputField(
         query,
         onQueryChange = {
+            activeLongClick.value = null
             text.value = it
         },
         onSearch = { },
@@ -71,12 +73,12 @@ fun SearchBarInputField(
             }
         },
         trailingIcon = {
-            IconButton(onClick = { /*TODO*/ }) {
-                Icon(
-                    Icons.Default.MoreVert,
-                    contentDescription = null
-                )
-            }
+//            IconButton(onClick = { /*TODO*/ }) {
+//                Icon(
+//                    Icons.Default.MoreVert,
+//                    contentDescription = null
+//                )
+//            }
         },
     )
 }

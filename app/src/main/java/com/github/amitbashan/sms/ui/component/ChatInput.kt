@@ -1,5 +1,6 @@
 package com.github.amitbashan.sms.ui.component
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -14,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.Icon
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
@@ -23,8 +25,13 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun ChatInput(message: MutableState<String>, onClick: () -> Unit) {
-    Row(modifier = Modifier.height(IntrinsicSize.Min).fillMaxWidth()) {
-        TextField(
+    Row(
+        modifier = Modifier.height(IntrinsicSize.Min)
+            .padding(10.dp)
+            .fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(5.dp),
+    ) {
+        OutlinedTextField(
             modifier = Modifier.weight(0.8f).fillMaxSize(),
             value = message.value,
             shape = RoundedCornerShape(10.dp),

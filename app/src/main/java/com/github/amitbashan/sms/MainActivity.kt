@@ -2,6 +2,8 @@ package com.github.amitbashan.sms
 
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.drawable.Icon
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,6 +17,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Create
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -23,6 +26,7 @@ import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -31,9 +35,12 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.core.app.ActivityCompat
+import androidx.core.app.NotificationCompat
+import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import com.github.amitbashan.sms.activity.AboutActivity
+import com.github.amitbashan.sms.activity.BlockedSpamContactsActivity
 import com.github.amitbashan.sms.activity.ChatActivity
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.Contact
@@ -54,7 +61,7 @@ import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
-    val SEARCH_DEBOUNCE_DELAY_MILIS = 400L
+    private val SEARCH_DEBOUNCE_DELAY_MILIS = 400L
 
     fun hasPermissions(): Boolean {
         val needsReadSmsPermission = ContextCompat.checkSelfPermission(
@@ -65,8 +72,12 @@ class MainActivity : ComponentActivity() {
             applicationContext,
             android.Manifest.permission.SEND_SMS
         ) == PackageManager.PERMISSION_DENIED
+        val needsPostNotifPermission = ContextCompat.checkSelfPermission(
+            applicationContext,
+            android.Manifest.permission.POST_NOTIFICATIONS
+        ) == PackageManager.PERMISSION_DENIED
 
-        return !(needsReadSmsPermission || needsSendSmsPermission)
+        return !(needsReadSmsPermission || needsSendSmsPermission || needsPostNotifPermission)
     }
 
     fun requestPermissions() {
@@ -75,7 +86,8 @@ class MainActivity : ComponentActivity() {
                 this,
                 arrayOf(
                     android.Manifest.permission.RECEIVE_SMS,
-                    android.Manifest.permission.SEND_SMS
+                    android.Manifest.permission.SEND_SMS,
+                    android.Manifest.permission.POST_NOTIFICATIONS,
                 ),
                 0
             )
@@ -85,6 +97,7 @@ class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class, ExperimentalCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         requestPermissions()
         AppDatabase.initialize(applicationContext)
         startService(Intent(applicationContext, SmsService::class.java))
@@ -97,7 +110,8 @@ class MainActivity : ComponentActivity() {
 
         val db = viewModel.db ?: return
         val searchText = MutableStateFlow("")
-        val previewsFlow = searchText.debounce(SEARCH_DEBOUNCE_DELAY_MILIS).distinctUntilChanged()
+        val previewsFlow = searchText.debounce(SEARCH_DEBOUNCE_DELAY_MILIS)
+            .distinctUntilChanged()
             .flatMapLatest {
                 if (it.isBlank() || !"[a-zA-Z0-9 ]+".toRegex().matches(it)) {
                     db.contactPreviewDao().getAll(false)
@@ -106,8 +120,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-        enableEdgeToEdge()
         setContent {
+            val activeLongClick: MutableState<Int?> = remember { mutableStateOf(null) }
             val showAddContactDialog = remember { mutableStateOf(false) }
             val addContactTextFieldValue = remember { mutableStateOf("") }
             val scope = rememberCoroutineScope()
@@ -117,6 +131,11 @@ class MainActivity : ComponentActivity() {
             ModalNavigationDrawer(
                 drawerContent = {
                     DrawerSheet(
+                        blockAndSpamContactsOnClick = {
+                            val intent =
+                                Intent(applicationContext, BlockedSpamContactsActivity::class.java)
+                            startActivity(intent)
+                        },
                         aboutOnClick = {
                             val intent = Intent(applicationContext, AboutActivity::class.java)
                             startActivity(intent)
@@ -135,7 +154,14 @@ class MainActivity : ComponentActivity() {
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .absolutePadding(5.dp, 7.dp, 5.dp, 10.dp),
-                            inputField = { SearchBarInputField(scope, drawerState, searchText) },
+                            inputField = {
+                                SearchBarInputField(
+                                    scope,
+                                    drawerState,
+                                    searchText,
+                                    activeLongClick
+                                )
+                            },
                             expanded = false,
                             onExpandedChange = { }
                         ) {}
@@ -163,11 +189,22 @@ class MainActivity : ComponentActivity() {
                         }
                         showAddContactDialog.value = false
                     })
-                    ContactList(innerPadding, previews, buttonOnClick = {
-                        val intent = Intent(applicationContext, ChatActivity::class.java)
-                            .putExtra("com.github.amitbashan.sms.originatingAddress", it)
-                        startActivity(intent)
-                    })
+                    ContactList(
+                        innerPadding,
+                        previews,
+                        buttonOnClick = {
+                            val intent = Intent(applicationContext, ChatActivity::class.java)
+                                .putExtra("com.github.amitbashan.sms.originatingAddress", it)
+                            startActivity(intent)
+                        },
+                        blockOnclick = {
+                            scope.launch {
+                                db.contactDao().setSpamStatus(it, true)
+                            }
+                        },
+                        activeLongClick,
+                        false,
+                    )
                 }
             }
         }
