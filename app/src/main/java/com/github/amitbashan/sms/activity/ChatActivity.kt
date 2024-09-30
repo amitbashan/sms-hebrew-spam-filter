@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.lifecycleScope
+import com.github.amitbashan.sms.SmsReceiver
 import com.github.amitbashan.sms.SmsService
 import com.github.amitbashan.sms.persistence.ContactPreview
 import com.github.amitbashan.sms.ui.component.ChatInput
@@ -131,9 +132,11 @@ class ChatActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
         val originatingAddress =
             intent.getStringExtra("com.github.amitbashan.sms.originatingAddress")
                 ?: return setContent { ErrorPage("Unable to load chat") }
+        SmsReceiver.setActive(originatingAddress)
 
         setContent {
             val message = remember { mutableStateOf("") }
@@ -169,5 +172,10 @@ class ChatActivity : ComponentActivity() {
                 MessageList(innerPadding, originatingAddress)
             }
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        SmsReceiver.clearActive()
     }
 }

@@ -36,12 +36,21 @@ fun BroadcastReceiver.goAsync(
 
 class SmsReceiver : BroadcastReceiver() {
     companion object {
+        private var ACTIVE_CHAT_ORIGINATING_ADDRESS: String? = null
         private val CHANNEL_ID = "com.github.amitbashan.sms.NOTIF_CHANNEL"
         private val notificationChannel = NotificationChannel(
             CHANNEL_ID,
             "SMSBrew",
             NotificationManager.IMPORTANCE_HIGH
         )
+
+        fun setActive(address: String) {
+            ACTIVE_CHAT_ORIGINATING_ADDRESS = address
+        }
+
+        fun clearActive() {
+            ACTIVE_CHAT_ORIGINATING_ADDRESS = null
+        }
     }
 
     override fun onReceive(context: Context?, intent: Intent?) {
@@ -82,19 +91,23 @@ class SmsReceiver : BroadcastReceiver() {
                     activityIntent,
                     PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
-                val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-                    .setDefaults(NotificationCompat.DEFAULT_ALL)
-                    .setSmallIcon(android.R.drawable.ic_popup_reminder)
-                    .setContentTitle(originatingAddress)
-                    .setContentText(it.first.content)
-                    .setStyle(NotificationCompat.BigTextStyle().bigText(it.first.content))
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setContentIntent(pendingIntent)
 
-                notificationManager.notify(
-                    (System.currentTimeMillis() % Int.MAX_VALUE.toLong()).toInt(),
-                    builder.build()
-                )
+                if (ACTIVE_CHAT_ORIGINATING_ADDRESS != originatingAddress) {
+                    val builder = NotificationCompat.Builder(context, CHANNEL_ID)
+                        .setDefaults(NotificationCompat.DEFAULT_ALL)
+                        .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                        .setContentTitle(originatingAddress)
+                        .setAutoCancel(true)
+                        .setContentText(it.first.content)
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(it.first.content))
+                        .setPriority(NotificationCompat.PRIORITY_HIGH)
+                        .setContentIntent(pendingIntent)
+
+                    notificationManager.notify(
+                        (System.currentTimeMillis() % Int.MAX_VALUE.toLong()).toInt(),
+                        builder.build()
+                    )
+                }
             }
         }
     }
