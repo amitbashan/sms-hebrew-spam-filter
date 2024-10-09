@@ -44,7 +44,7 @@ fun ContactButton(
     timeOfLastMessage: LocalDateTime = LocalDateTime.now(),
     index: Int,
     activeLongClick: MutableState<Int?>,
-    onclickHandler: () -> Unit = {},
+    onclickHandler: (String) -> Unit = {},
     blockOnclickHandler: (String) -> Unit = {},
     isSpamActivity: Boolean,
 ) {
@@ -66,7 +66,7 @@ fun ContactButton(
 
                 is PressInteraction.Release -> {
                     if (!longClicked) {
-                        onclickHandler()
+                        onclickHandler(contactName)
                     }
                 }
             }

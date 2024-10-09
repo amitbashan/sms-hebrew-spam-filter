@@ -1,5 +1,9 @@
 package com.github.amitbashan.sms
 
+import ai.onnxruntime.OnnxTensor
+import ai.onnxruntime.OrtEnvironment
+import ai.onnxruntime.OrtSession
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
@@ -40,12 +44,15 @@ import com.github.amitbashan.sms.activity.ChatActivity
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.Contact
 import com.github.amitbashan.sms.persistence.ContactPreview
+import com.github.amitbashan.sms.tokenization.WordpieceTokenizer
 import com.github.amitbashan.sms.ui.component.AddContactDialog
 import com.github.amitbashan.sms.ui.component.ContactList
 import com.github.amitbashan.sms.ui.component.DrawerSheet
 import com.github.amitbashan.sms.ui.component.ErrorPage
 import com.github.amitbashan.sms.ui.component.SearchBarInputField
 import com.github.amitbashan.sms.viewmodel.CommonViewModel
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +60,10 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.launch
+import org.jetbrains.kotlinx.dl.api.summary.printSummary
+import org.jetbrains.kotlinx.dl.onnx.inference.OnnxInferenceModel
+import org.jetbrains.kotlinx.dl.onnx.inference.executionproviders.ExecutionProvider
+import java.io.InputStreamReader
 
 class MainActivity : ComponentActivity() {
     private val viewModel: CommonViewModel by viewModels()
@@ -89,6 +100,7 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    @SuppressLint("ResourceType")
     @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class, ExperimentalCoroutinesApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -105,7 +117,8 @@ class MainActivity : ComponentActivity() {
 
         val db = viewModel.db ?: return
         val searchText = MutableStateFlow("")
-        val previewsFlow = searchText.debounce(SEARCH_DEBOUNCE_DELAY_MILIS)
+        val previewsFlow = searchText
+            .debounce(SEARCH_DEBOUNCE_DELAY_MILIS)
             .distinctUntilChanged()
             .flatMapLatest {
                 if (it.isBlank() || !"[a-zA-Z0-9 ]+".toRegex().matches(it)) {

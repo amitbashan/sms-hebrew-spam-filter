@@ -11,7 +11,7 @@ android {
 
     defaultConfig {
         applicationId = "com.github.amitbashan.sms"
-        minSdkVersion(rootProject.extra["defaultMinSdkVersion"] as Int)
+        minSdk = rootProject.extra["defaultMinSdkVersion"] as Int
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
@@ -77,4 +77,8 @@ dependencies {
     annotationProcessor(libs.androidx.room.compiler)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.room.ktx)
+    implementation(libs.kotlin.deeplearning.onnx)
+    implementation(libs.onnxruntime.android)
+    implementation(libs.gson)
+    implementation(libs.onnxruntime.training.android)
 }

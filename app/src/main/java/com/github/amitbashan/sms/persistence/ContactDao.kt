@@ -16,6 +16,9 @@ interface ContactDao {
     @Query("SELECT EXISTS (SELECT * FROM Contact WHERE Contact.originatingAddress = :originatingAddress)")
     suspend fun exists(originatingAddress: String): Boolean
 
+    @Query("SELECT EXISTS (SELECT * FROM Contact WHERE Contact.originatingAddress = :originatingAddress AND Contact.isSpammer = TRUE)")
+    suspend fun isSpammer(originatingAddress: String): Boolean
+
     @Query("UPDATE Contact SET isSpammer = :isSpammer WHERE originatingAddress = :originatingAddress")
     suspend fun setSpamStatus(originatingAddress: String, isSpammer: Boolean)
 

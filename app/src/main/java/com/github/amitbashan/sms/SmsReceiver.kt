@@ -78,6 +78,8 @@ class SmsReceiver : BroadcastReceiver() {
         goAsync {
             pairs.forEach {
                 val originatingAddress = it.first.originatingAddress
+                val msg = it.first.content
+                val isSpam = SmsService.getModelInstance().predict(msg)
 
                 contactDao.insertIfDoesntExist(originatingAddress, false)
                 messageDao.pushMessage(it.first)
@@ -92,14 +94,19 @@ class SmsReceiver : BroadcastReceiver() {
                     PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
 
-                if (ACTIVE_CHAT_ORIGINATING_ADDRESS != originatingAddress) {
+                if (ACTIVE_CHAT_ORIGINATING_ADDRESS != originatingAddress && !db.contactDao().isSpammer(originatingAddress)) {
+                    val icon = if (isSpam) {
+                        android.R.drawable.ic_dialog_alert
+                    } else {
+                        android.R.drawable.ic_popup_reminder
+                    }
                     val builder = NotificationCompat.Builder(context, CHANNEL_ID)
                         .setDefaults(NotificationCompat.DEFAULT_ALL)
-                        .setSmallIcon(android.R.drawable.ic_popup_reminder)
+                        .setSmallIcon(icon)
                         .setContentTitle(originatingAddress)
                         .setAutoCancel(true)
-                        .setContentText(it.first.content)
-                        .setStyle(NotificationCompat.BigTextStyle().bigText(it.first.content))
+                        .setContentText(msg)
+                        .setStyle(NotificationCompat.BigTextStyle().bigText(msg))
                         .setPriority(NotificationCompat.PRIORITY_HIGH)
                         .setContentIntent(pendingIntent)
 

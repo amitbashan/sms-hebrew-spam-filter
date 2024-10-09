@@ -42,10 +42,7 @@ fun ContactList(
                     timestamp,
                     index,
                     activeLongClick,
-                    onclickHandler =
-                    {
-                        buttonOnClick(item.originatingAddress)
-                    },
+                    onclickHandler = buttonOnClick,
                     blockOnclickHandler = blockOnclick,
                     isSpamActivity
                 )

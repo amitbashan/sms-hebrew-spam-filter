@@ -8,11 +8,20 @@ import android.content.IntentFilter
 import android.os.IBinder
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.MessageStatus
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import java.io.InputStreamReader
 import java.util.Timer
 import java.util.TimerTask
 
 class SmsService : Service() {
     companion object {
+        private lateinit var modelWrapper: ModelWrapper
+
+        fun getModelInstance(): ModelWrapper {
+            return modelWrapper
+        }
+
         private val smsReceiver = SmsReceiver()
         const val TIMEOUT_PERIOD_MINS = 1L
         const val TIMEOUT_PERIOD_MINS_MILIS = TIMEOUT_PERIOD_MINS * 1000L * 60L
@@ -109,6 +118,12 @@ class SmsService : Service() {
             0,
             TIMEOUT_PERIOD_MINS_MILIS
         )
+
+        val modelBytes = resources.openRawResource(R.raw.quantized_model).readBytes()
+        val vocabBytes = resources.openRawResource(R.raw.vocabulary)
+        val vocabType = object : TypeToken<Map<String, Int>>() {}.type
+        val vocab: Map<String, Int> = Gson().fromJson(InputStreamReader(vocabBytes), vocabType)
+        modelWrapper = ModelWrapper(modelBytes, vocab)
     }
 
     override fun onDestroy() {

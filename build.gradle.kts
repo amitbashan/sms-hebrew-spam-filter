@@ -3,4 +3,4 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.jetbrains.kotlin.android) apply false
 }
-val defaultMinSdkVersion by extra(34)
+val defaultMinSdkVersion by extra(33)
