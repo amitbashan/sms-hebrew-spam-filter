@@ -19,4 +19,5 @@ data class Message(
     val content: String,
     val isMe: Boolean,
     val messageStatus: MessageStatus?,
+    val isSpam: Boolean,
 )

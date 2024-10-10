@@ -68,7 +68,8 @@ class SmsReceiver : BroadcastReceiver() {
             val sender = kv.key
             val body: String = kv.value.fold("") { acc, x -> acc + x.messageBody }
             val timestamp = System.currentTimeMillis()
-            val message = Message(sender, timestamp, body, false, null)
+            val isSpam = SmsService.getModelInstance().predict(body)
+            val message = Message(sender, timestamp, body, false, null, isSpam)
             val preview = ContactPreview(sender, timestamp, body)
             Pair(message, preview)
         }
@@ -81,7 +82,7 @@ class SmsReceiver : BroadcastReceiver() {
             pairs.forEach {
                 val originatingAddress = it.first.originatingAddress
                 val msg = it.first.content
-                val isSpam = SmsService.getModelInstance().predict(msg)
+                val isSpam = it.first.isSpam
 
                 contactDao.insertIfDoesntExist(originatingAddress, false)
                 messageDao.pushMessage(it.first)

@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,6 +29,7 @@ import com.github.amitbashan.sms.persistence.MessageStatus
 fun Message(
     message: String = "Hello world!",
     isMe: Boolean = false,
+    isSpam: Boolean = false,
     messageStatus: MessageStatus? = null
 ) {
     Row(
@@ -61,6 +63,11 @@ fun Message(
                     modifier = Modifier.size(20.dp)
                 )
             }
+        } else if (isSpam) {
+            Icon(
+                imageVector = Icons.Outlined.Warning,
+                contentDescription = "Message detected as spam",
+            )
         }
         Box(
             Modifier
