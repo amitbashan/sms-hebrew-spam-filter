@@ -1,5 +1,6 @@
 [versions]
 agp = "8.5.1"
+fragmentZ = "1.8.0"
 gson = "2.11.0"
 kotlin = "2.0.0"
 coreKtx = "1.10.1"
@@ -17,13 +18,17 @@ constraintlayout = "2.1.4"
 material3 = "1.3.0"
 onnxruntimeAndroid = "1.19.2"
 onnxruntimeTrainingAndroid = "latest.release"
+preferenceKtx = "1.2.1"
 roomCompiler = "2.6.1"
 roomKtx = "2.6.1"
 roomRuntime = "2.6.1"
+fragmentCompose = "1.8.4"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version = "1.13.1" }
+androidx-fragment-z = { module = "androidx.fragment:fragment-*", version.ref = "fragmentZ" }
 androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
+androidx-preference-ktx = { module = "androidx.preference:preference-ktx", version.ref = "preferenceKtx" }
 androidx-room-compiler = { module = "androidx.room:room-compiler", version.ref = "roomCompiler" }
 androidx-room-ktx = { module = "androidx.room:room-ktx", version.ref = "roomKtx" }
 androidx-room-runtime = { module = "androidx.room:room-runtime", version.ref = "roomRuntime" }
@@ -49,6 +54,7 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
 onnxruntime-android = { module = "com.microsoft.onnxruntime:onnxruntime-android", version.ref = "onnxruntimeAndroid" }
 onnxruntime-training-android = { module = "com.microsoft.onnxruntime:onnxruntime-training-android", version.ref = "onnxruntimeTrainingAndroid" }
+androidx-fragment-compose = { group = "androidx.fragment", name = "fragment-compose", version.ref = "fragmentCompose" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -34,6 +34,11 @@
                 android:theme="@style/Theme.SMS"
                 android:windowSoftInputMode="adjustResize" />
         <activity
+                android:name=".activity.SettingsActivity"
+                android:exported="false"
+                android:theme="@style/AppTheme.FullScreen"
+                android:windowSoftInputMode="adjustResize" />
+        <activity
                 android:name=".activity.BlockedSpamContactsActivity"
                 android:exported="false"
                 android:theme="@style/Theme.SMS"

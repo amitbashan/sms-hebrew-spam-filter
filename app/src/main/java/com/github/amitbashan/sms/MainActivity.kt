@@ -41,6 +41,7 @@ import androidx.lifecycle.lifecycleScope
 import com.github.amitbashan.sms.activity.AboutActivity
 import com.github.amitbashan.sms.activity.BlockedSpamContactsActivity
 import com.github.amitbashan.sms.activity.ChatActivity
+import com.github.amitbashan.sms.activity.SettingsActivity
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.Contact
 import com.github.amitbashan.sms.persistence.ContactPreview
@@ -146,6 +147,10 @@ class MainActivity : ComponentActivity() {
                         },
                         aboutOnClick = {
                             val intent = Intent(applicationContext, AboutActivity::class.java)
+                            startActivity(intent)
+                        },
+                        settingsOnClick = {
+                            val intent = Intent(applicationContext, SettingsActivity::class.java)
                             startActivity(intent)
                         }
                     )

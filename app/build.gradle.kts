@@ -80,5 +80,6 @@ dependencies {
     implementation(libs.kotlin.deeplearning.onnx)
     implementation(libs.onnxruntime.android)
     implementation(libs.gson)
-    implementation(libs.onnxruntime.training.android)
+    // implementation(libs.onnxruntime.training.android)
+    implementation(libs.androidx.preference.ktx)
 }

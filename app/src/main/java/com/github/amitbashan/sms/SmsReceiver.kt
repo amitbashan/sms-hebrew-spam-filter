@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.provider.Telephony
 import androidx.core.app.NotificationCompat
+import androidx.preference.PreferenceManager
 import com.github.amitbashan.sms.activity.ChatActivity
 import com.github.amitbashan.sms.persistence.AppDatabase
 import com.github.amitbashan.sms.persistence.ContactPreview
@@ -55,6 +56,7 @@ class SmsReceiver : BroadcastReceiver() {
 
     override fun onReceive(context: Context?, intent: Intent?) {
         if (intent == null || context == null) return
+        val sharedPreferences = PreferenceManager.getDefaultSharedPreferences(context)
         val notificationManager = context.getSystemService(NotificationManager::class.java)
         notificationManager.createNotificationChannel(notificationChannel)
         if (intent.action != Telephony.Sms.Intents.SMS_RECEIVED_ACTION) return
@@ -93,6 +95,7 @@ class SmsReceiver : BroadcastReceiver() {
                     activityIntent,
                     PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
+                val autoblock = sharedPreferences.getBoolean("autoblock", true)
 
                 if (ACTIVE_CHAT_ORIGINATING_ADDRESS != originatingAddress && !db.contactDao().isSpammer(originatingAddress)) {
                     val icon = if (isSpam) {
@@ -114,6 +117,10 @@ class SmsReceiver : BroadcastReceiver() {
                         (System.currentTimeMillis() % Int.MAX_VALUE.toLong()).toInt(),
                         builder.build()
                     )
+                }
+
+                if (isSpam && autoblock) {
+                    db.contactDao().setSpamStatus(originatingAddress, true)
                 }
             }
         }

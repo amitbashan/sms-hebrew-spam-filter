@@ -2,11 +2,13 @@ package com.github.amitbashan.sms.ui.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.absolutePadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Block
 import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 @Composable
-fun DrawerSheet(blockAndSpamContactsOnClick: () -> Unit, aboutOnClick: () -> Unit) {
+fun DrawerSheet(blockAndSpamContactsOnClick: () -> Unit, aboutOnClick: () -> Unit, settingsOnClick: () -> Unit) {
     ModalDrawerSheet() {
         Text(buildAnnotatedString {
             withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
@@ -57,6 +59,23 @@ fun DrawerSheet(blockAndSpamContactsOnClick: () -> Unit, aboutOnClick: () -> Uni
         )
         NavigationDrawerItem(
             modifier = Modifier.padding(20.dp),
+            label = {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Outlined.Settings,
+                        contentDescription = null
+                    )
+                    Text(text = "Settings", fontSize = 15.sp)
+                }
+            },
+            selected = false,
+            onClick = settingsOnClick,
+        )
+        NavigationDrawerItem(
+            modifier = Modifier.absolutePadding(left = 20.dp, right = 20.dp),
             label = {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
