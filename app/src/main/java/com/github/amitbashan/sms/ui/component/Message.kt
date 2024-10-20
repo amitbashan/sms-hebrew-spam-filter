@@ -1,5 +1,6 @@
 package com.github.amitbashan.sms.ui.component
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,11 +16,13 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.github.amitbashan.sms.persistence.MessageStatus
@@ -30,8 +33,11 @@ fun Message(
     message: String = "Hello world!",
     isMe: Boolean = false,
     isSpam: Boolean = false,
+    probability: Float = 0F,
     messageStatus: MessageStatus? = null
 ) {
+    val context = LocalContext.current
+
     Row(
         Modifier
             .fillMaxSize()
@@ -64,10 +70,14 @@ fun Message(
                 )
             }
         } else if (isSpam) {
-            Icon(
-                imageVector = Icons.Outlined.Warning,
-                contentDescription = "Message detected as spam",
-            )
+            IconButton(onClick = {
+                Toast.makeText(context, "Probability = ${probability * 100}%", Toast.LENGTH_SHORT).show()
+            }) {
+                Icon(
+                    imageVector = Icons.Outlined.Warning,
+                    contentDescription = "Message detected as spam",
+                )
+            }
         }
         Box(
             Modifier

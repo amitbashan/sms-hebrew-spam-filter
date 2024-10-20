@@ -96,7 +96,7 @@ class ChatActivity : ComponentActivity() {
                 ArrayList(smsDeliveredPendingIntents)
             )
             val msg =
-                DbMessage(originatingAddress, timestamp, message, true, null, false)
+                DbMessage(originatingAddress, timestamp, message, true, null, false, 0F)
             lifecycleScope.launch {
                 db.messageDao().pushMessage(msg)
                 db.contactPreviewDao()
@@ -123,7 +123,7 @@ class ChatActivity : ComponentActivity() {
             horizontalAlignment = Alignment.Start
         ) {
             items(conversation) {
-                Message(it.content, it.isMe, it.isSpam, it.messageStatus)
+                Message(it.content, it.isMe, it.isSpam, it.isSpamProbability, it.messageStatus)
             }
         }
     }

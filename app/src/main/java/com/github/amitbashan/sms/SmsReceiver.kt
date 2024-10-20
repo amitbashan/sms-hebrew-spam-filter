@@ -69,7 +69,7 @@ class SmsReceiver : BroadcastReceiver() {
             val body: String = kv.value.fold("") { acc, x -> acc + x.messageBody }
             val timestamp = System.currentTimeMillis()
             val isSpam = SmsService.getModelInstance().predict(body)
-            val message = Message(sender, timestamp, body, false, null, isSpam)
+            val message = Message(sender, timestamp, body, false, null, isSpam.first, isSpam.second)
             val preview = ContactPreview(sender, timestamp, body)
             Pair(message, preview)
         }

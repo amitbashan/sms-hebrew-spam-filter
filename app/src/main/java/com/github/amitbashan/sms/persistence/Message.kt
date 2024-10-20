@@ -20,4 +20,5 @@ data class Message(
     val isMe: Boolean,
     val messageStatus: MessageStatus?,
     val isSpam: Boolean,
+    val isSpamProbability: Float,
 )

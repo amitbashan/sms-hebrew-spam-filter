@@ -19,7 +19,7 @@ fun FloatArray.softmax(): FloatArray {
     return this.indices.map { this.softmaxAt(it) }.toFloatArray()
 }
 
-class ModelWrapper(val modelBytes: ByteArray, vocab: Map<String, Int>) {
+class ModelWrapper(modelBytes: ByteArray, vocab: Map<String, Int>) {
     companion object {
         const val MAX_INPUT_SIZE = 512
     }
@@ -31,11 +31,11 @@ class ModelWrapper(val modelBytes: ByteArray, vocab: Map<String, Int>) {
         env.createSession(modelBytes, opts)
     }
 
-    fun predict(message: String): Boolean {
+    fun predict(message: String): Pair<Boolean, Float> {
         val tokenizedMessage = tokenizer.tokenizeAndPadWithAttentionMask(message, MAX_INPUT_SIZE)
 
         if (tokenizedMessage.first.size > MAX_INPUT_SIZE) {
-            return false
+            return Pair(false, 0F)
         }
 
         val output = session.run(
@@ -53,6 +53,7 @@ class ModelWrapper(val modelBytes: ByteArray, vocab: Map<String, Int>) {
         val prediction = output.get("prediction")!!.get() as OnnxTensor
         val logits = prediction.floatBuffer.array().softmax()
 
-        return logits.argmax() != 0
+
+        return Pair(logits.argmax() != 0, logits[1])
     }
 }
