@@ -1,5 +1,6 @@
 package com.github.amitbashan.sms.ui.component
 
+import android.content.Intent
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Arrangement
@@ -26,31 +27,36 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalViewConfiguration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.github.amitbashan.sms.activity.ChatActivity
+import com.github.amitbashan.sms.persistence.ContactPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeFormatter.ISO_LOCAL_DATE
 
 @Composable
 fun ContactButton(
-    contactName: String = "John Doe",
-    lastMessage: String = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
-    timeOfLastMessage: LocalDateTime = LocalDateTime.now(),
-    index: Int,
-    activeLongClick: MutableState<Int?>,
-    onclickHandler: (String) -> Unit = {},
+    preview: ContactPreview,
+    activeLongClick: MutableState<String?>,
     blockOnclickHandler: (String) -> Unit = {},
     isSpamActivity: Boolean,
 ) {
+    val context = LocalContext.current
+    val contactName = preview.originatingAddress
+    val lastMessage = preview.content!!
+    val timeOfLastMessage = Instant.ofEpochMilli(preview.timestamp).atZone(ZoneId.systemDefault())
+        .toLocalDateTime()
     val interactionSource = remember { MutableInteractionSource() }
     val viewConfiguration = LocalViewConfiguration.current
-    val isLongClick = activeLongClick.value == index
+    val isLongClick = activeLongClick.value == contactName
     var longClicked = false
 
     LaunchedEffect(interactionSource) {
@@ -60,13 +66,15 @@ fun ContactButton(
                     activeLongClick.value = null
                     longClicked = false
                     delay(viewConfiguration.longPressTimeoutMillis)
-                    activeLongClick.value = index
+                    activeLongClick.value = contactName
                     longClicked = true
                 }
 
                 is PressInteraction.Release -> {
                     if (!longClicked) {
-                        onclickHandler(contactName)
+                        val intent = Intent(context, ChatActivity::class.java)
+                            .putExtra("com.github.amitbashan.sms.originatingAddress", contactName)
+                        context.startActivity(intent)
                     }
                 }
             }

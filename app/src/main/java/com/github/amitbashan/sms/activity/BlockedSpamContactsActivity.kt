@@ -17,8 +17,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.MutableState
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -35,12 +33,10 @@ class BlockedSpamContactsActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
-        val db = viewModel.db ?: return;
+        val db = viewModel.db ?: return
 
         setContent {
-            val previews by db.contactPreviewDao().getAll(true)
-                .collectAsState(initial = emptyList())
-            val activeLongClick: MutableState<Int?> = remember { mutableStateOf(null) }
+            val activeLongClick: MutableState<String?> = remember { mutableStateOf(null) }
 
             Scaffold(
                 modifier = Modifier
@@ -60,11 +56,8 @@ class BlockedSpamContactsActivity : ComponentActivity() {
                 },
             ) { innerPadding ->
                 ContactList(
-                    innerPadding, previews, buttonOnClick = {
-                        val intent = Intent(applicationContext, ChatActivity::class.java)
-                            .putExtra("com.github.amitbashan.sms.originatingAddress", it)
-                        startActivity(intent)
-                    },
+                    innerPadding,
+                    db.contactPreviewDao().getAll(true),
                     blockOnclick = {
                         lifecycleScope.launch {
                             db.contactDao().setSpamStatus(it, false)

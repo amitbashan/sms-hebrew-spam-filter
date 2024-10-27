@@ -29,7 +29,7 @@ fun SearchBarInputField(
     scope: CoroutineScope,
     drawerState: DrawerState,
     text: MutableStateFlow<String>,
-    activeLongClick: MutableState<Int?>,
+    activeLongClick: MutableState<String?>,
 ) {
     val query by text.collectAsState(initial = "")
 

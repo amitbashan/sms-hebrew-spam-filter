@@ -7,6 +7,7 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -130,12 +131,11 @@ class MainActivity : ComponentActivity() {
             }
 
         setContent {
-            val activeLongClick: MutableState<Int?> = remember { mutableStateOf(null) }
+            val activeLongClick: MutableState<String?> = remember { mutableStateOf(null) }
             val showAddContactDialog = remember { mutableStateOf(false) }
             val addContactTextFieldValue = remember { mutableStateOf("") }
             val scope = rememberCoroutineScope()
             val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
-            val previews by previewsFlow.collectAsState(initial = emptyList())
 
             ModalNavigationDrawer(
                 drawerContent = {
@@ -204,12 +204,7 @@ class MainActivity : ComponentActivity() {
                     })
                     ContactList(
                         innerPadding,
-                        previews,
-                        buttonOnClick = {
-                            val intent = Intent(applicationContext, ChatActivity::class.java)
-                                .putExtra("com.github.amitbashan.sms.originatingAddress", it)
-                            startActivity(intent)
-                        },
+                        previewsFlow,
                         blockOnclick = {
                             scope.launch {
                                 db.contactDao().setSpamStatus(it, true)

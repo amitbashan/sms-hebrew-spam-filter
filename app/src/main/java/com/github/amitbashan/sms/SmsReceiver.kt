@@ -90,6 +90,10 @@ class SmsReceiver : BroadcastReceiver() {
 
                 val activityIntent = Intent(context, ChatActivity::class.java)
                     .putExtra("com.github.amitbashan.sms.originatingAddress", originatingAddress)
+                    .setFlags(
+                        Intent.FLAG_ACTIVITY_NEW_TASK
+                                or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    )
                 val pendingIntent = PendingIntent.getActivity(
                     context,
                     0,
@@ -98,7 +102,9 @@ class SmsReceiver : BroadcastReceiver() {
                 )
                 val autoblock = sharedPreferences.getBoolean("autoblock", true)
 
-                if (ACTIVE_CHAT_ORIGINATING_ADDRESS != originatingAddress && !db.contactDao().isSpammer(originatingAddress)) {
+                if (ACTIVE_CHAT_ORIGINATING_ADDRESS != originatingAddress && !db.contactDao()
+                        .isSpammer(originatingAddress)
+                ) {
                     val icon = if (isSpam) {
                         android.R.drawable.ic_dialog_alert
                     } else {
