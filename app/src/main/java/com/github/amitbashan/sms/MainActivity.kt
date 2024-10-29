@@ -84,8 +84,12 @@ class MainActivity : ComponentActivity() {
             applicationContext,
             android.Manifest.permission.POST_NOTIFICATIONS
         ) == PackageManager.PERMISSION_DENIED
+        val needsBootPermission = ContextCompat.checkSelfPermission(
+            applicationContext,
+            android.Manifest.permission.RECEIVE_BOOT_COMPLETED
+        ) == PackageManager.PERMISSION_DENIED
 
-        return !(needsReadSmsPermission || needsSendSmsPermission || needsPostNotifPermission)
+        return !(needsReadSmsPermission || needsSendSmsPermission || needsPostNotifPermission || needsBootPermission)
     }
 
     fun requestPermissions() {
@@ -96,6 +100,7 @@ class MainActivity : ComponentActivity() {
                     android.Manifest.permission.RECEIVE_SMS,
                     android.Manifest.permission.SEND_SMS,
                     android.Manifest.permission.POST_NOTIFICATIONS,
+                    android.Manifest.permission.RECEIVE_BOOT_COMPLETED
                 ),
                 0
             )

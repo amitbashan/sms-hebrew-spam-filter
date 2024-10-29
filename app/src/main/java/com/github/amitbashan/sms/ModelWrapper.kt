@@ -31,7 +31,14 @@ class ModelWrapper(modelBytes: ByteArray, vocab: Map<String, Int>) {
         env.createSession(modelBytes, opts)
     }
 
-    fun predict(message: String): Pair<Boolean, Float> {
+    fun extractHebrew(input: String): String {
+        val regex = "[\\u0590-\\u05FF\\d\\W]+".toRegex()
+        val matches = regex.findAll(input)
+        return matches.joinToString("") { it.value }
+    }
+
+    fun predict(input: String): Pair<Boolean, Float> {
+        val message = extractHebrew(input)
         val tokenizedMessage = tokenizer.tokenizeAndPadWithAttentionMask(message, MAX_INPUT_SIZE)
 
         if (tokenizedMessage.first.size > MAX_INPUT_SIZE) {
@@ -52,7 +59,6 @@ class ModelWrapper(modelBytes: ByteArray, vocab: Map<String, Int>) {
         )
         val prediction = output.get("prediction")!!.get() as OnnxTensor
         val logits = prediction.floatBuffer.array().softmax()
-
 
         return Pair(logits.argmax() != 0, logits[1])
     }
